@@ -1,0 +1,110 @@
+import { TabWidget, LineEdit, Button } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Sound PNG";
+    width: 600px;
+    height: 400px;
+
+    in-out property <string> input-wav-path;
+    in-out property <string> input-png-path;
+    in-out property <string> output-wav-path;
+    in-out property <string> status-text: "Ready.";
+
+    in property <bool> encode-button-enabled: false;
+
+    // Decode properties
+    in-out property <string> decode-input-wav-path;
+    in-out property <string> decode-output-wav-path;
+    in-out property <string> decode-output-png-path;
+    in property <bool> decode-button-enabled: false;
+
+    callback browse-input-wav();
+    callback browse-input-png();
+    callback browse-output-wav();
+    callback request-encode();
+
+    // Decode callbacks
+    callback browse-decode-input-wav();
+    callback browse-decode-output-wav();
+    callback browse-decode-output-png();
+    callback request-decode();
+
+    TabWidget {
+        Tab {
+            title: "Encode";
+            VerticalLayout {
+                padding: 10px;
+                spacing: 10px;
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Input WAV:"; vertical-alignment: center; }
+                    LineEdit { text: root.input-wav-path; read-only: true; }
+                    Button { text: "Browse..."; clicked => root.browse-input-wav(); }
+                }
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Input PNG:"; vertical-alignment: center; }
+                    LineEdit { text: root.input-png-path; read-only: true; }
+                    Button { text: "Browse..."; clicked => root.browse-input-png(); }
+                }
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Output WAV:"; vertical-alignment: center; }
+                    LineEdit { text: root.output-wav-path; read-only: true; }
+                    Button { text: "Save As..."; clicked => root.browse-output-wav(); }
+                }
+
+                Button {
+                    text: "Encode";
+                    enabled: root.encode-button-enabled;
+                    clicked => root.request-encode();
+                }
+
+                Text {
+                    text: root.status-text;
+                }
+            }
+        }
+        Tab {
+            title: "Decode";
+            VerticalLayout {
+                padding: 10px;
+                spacing: 10px;
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Input WAV:"; vertical-alignment: center; }
+                    LineEdit { text: root.decode-input-wav-path; read-only: true; }
+                    Button { text: "Browse..."; clicked => root.browse-decode-input-wav(); }
+                }
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Output WAV:"; vertical-alignment: center; }
+                    LineEdit { text: root.decode-output-wav-path; read-only: true; }
+                    Button { text: "Save As..."; clicked => root.browse-decode-output-wav(); }
+                }
+
+                HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "Output PNG:"; vertical-alignment: center; }
+                    LineEdit { text: root.decode-output-png-path; read-only: true; }
+                    Button { text: "Save As..."; clicked => root.browse-decode-output-png(); }
+                }
+
+                Button {
+                    text: "Decode";
+                    enabled: root.decode-button-enabled;
+                    clicked => root.request-decode();
+                }
+
+                Text {
+                    text: root.status-text;
+                }
+            }
+        }
+    }
+}

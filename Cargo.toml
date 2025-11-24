@@ -1,0 +1,18 @@
+[package]
+name = "sound_png"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.100"
+clap = { version = "4.5.53", features = ["derive"] }
+hound = "3.5.1"
+slint = "1.5.1"
+rfd = "0.14.1"
+flate2 = "1.0"
+
+[dev-dependencies]
+tempfile = "3.10.1"
+
+[build-dependencies]
+slint-build = "1.5.1"
