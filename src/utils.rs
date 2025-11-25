@@ -16,27 +16,36 @@ pub fn read_and_normalize_wav(path: &PathBuf) -> Result<(WavSpec, Vec<i16>)> {
             .collect::<Result<Vec<_>>>()?,
         (SampleFormat::Int, 24) => reader
             .samples::<i32>()
-            .map(|s| s.map(|sample| (sample >> 8) as i16).context("Failed to read i24 sample"))
+            .map(|s| {
+                s.map(|sample| (sample >> 8) as i16)
+                    .context("Failed to read i24 sample")
+            })
             .collect::<Result<Vec<_>>>()?,
         (SampleFormat::Int, 32) => reader
             .samples::<i32>()
-            .map(|s| s.map(|sample| (sample >> 16) as i16).context("Failed to read i32 sample"))
+            .map(|s| {
+                s.map(|sample| (sample >> 16) as i16)
+                    .context("Failed to read i32 sample")
+            })
             .collect::<Result<Vec<_>>>()?,
         (SampleFormat::Float, 32) => reader
             .samples::<f32>()
-            .map(|s| s.map(|sample| (sample * i16::MAX as f32) as i16).context("Failed to read f32 sample"))
+            .map(|s| {
+                s.map(|sample| (sample * i16::MAX as f32) as i16)
+                    .context("Failed to read f32 sample")
+            })
             .collect::<Result<Vec<_>>>()?,
         _ => {
             return Err(anyhow!(
                 "Unsupported sample format: {:?} with {}-bit samples",
-                spec.sample_format, spec.bits_per_sample
+                spec.sample_format,
+                spec.bits_per_sample
             ));
         }
     };
 
     Ok((spec, samples))
 }
-
 
 // The old function is kept for compatibility, but now uses the new normalization.
 pub fn read_wav_16bit(path: &PathBuf) -> anyhow::Result<(WavSpec, Vec<i16>)> {

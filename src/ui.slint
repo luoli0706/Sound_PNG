@@ -1,109 +1,187 @@
-import { TabWidget, LineEdit, Button } from "std-widgets.slint";
+import { TabWidget, LineEdit, GroupBox } from "std-widgets.slint";
+
+// A more vibrant, gradient-based theme
+export global Theme {
+    in property <brush> window-background: @linear-gradient(135deg, #1f232c 0%, #3a404c 100%); // More distinct dark gradient
+    in property <brush> surface-background: @linear-gradient(135deg, #3a404c 0%, #1f232c 100%); // More distinct surface gradient
+
+    in property <color> primary: #88c0d0;
+    in property <color> primary-dark: #5e81ac;
+    
+    in property <color> text-strong: #ffffff;
+    in property <color> text-normal: #ffffff; // Bright white for maximum contrast
+    in property <color> text-faded: #abb2bf;
+    
+    in property <color> success: #a3be8c;
+    in property <color> error: #bf616a;
+    in property <color> border: #4c566a; // Slightly lighter border for visibility
+}
+
+// Custom button with the new theme
+component StyledButton inherits TouchArea {
+    in property <string> text;
+
+    height: 34px;
+    min-width: 80px;
+
+    Rectangle {
+        background: root.enabled ? (root.pressed ? Theme.primary-dark : (root.has-hover ? Theme.primary.darker(10%) : Theme.primary)) : Theme.surface-background;
+        border-radius: 4px;
+
+        Text {
+            text: root.text;
+            color: root.enabled ? Theme.text-strong : Theme.text-faded;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+component HorizontalLine inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
+}
 
 export component AppWindow inherits Window {
     title: "Sound PNG";
-    width: 600px;
-    height: 400px;
-
+    width: 700px;
+    height: 480px; 
+    background: Theme.window-background;
+    
+    // == App Properties ==
     in-out property <string> input-wav-path;
     in-out property <string> input-png-path;
     in-out property <string> output-wav-path;
-    in-out property <string> status-text: "Ready.";
-
     in property <bool> encode-button-enabled: false;
-
-    // Decode properties
     in-out property <string> decode-input-wav-path;
     in-out property <string> decode-output-wav-path;
     in-out property <string> decode-output-png-path;
     in property <bool> decode-button-enabled: false;
+    in-out property <string> status-text: "Ready.";
+    in-out property <color> status-color: Theme.text-normal;
 
+    // == Callbacks ==
     callback browse-input-wav();
     callback browse-input-png();
     callback browse-output-wav();
     callback request-encode();
-
-    // Decode callbacks
     callback browse-decode-input-wav();
     callback browse-decode-output-wav();
     callback browse-decode-output-png();
     callback request-decode();
 
-    TabWidget {
-        Tab {
-            title: "Encode";
-            VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
+    VerticalLayout {
+        alignment: stretch;
+        spacing: 0;
 
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Input WAV:"; vertical-alignment: center; }
-                    LineEdit { text: root.input-wav-path; read-only: true; }
-                    Button { text: "Browse..."; clicked => root.browse-input-wav(); }
+        // Header
+        Rectangle {
+            height: 40px;
+            background: Theme.surface-background;
+            padding-left: 20px;
+            padding-right: 20px;
+            // No border-radius here, as it's not a container for content
+            Text {
+                text: "Sound PNG Steganography Tool";
+                color: Theme.text-strong;
+                font-size: 18px;
+                vertical-alignment: center;
+            }
+        }
+        
+        // Main Content
+        TabWidget {
+            Tab {
+                title: "Encode";
+                VerticalLayout {
+                    spacing: 15px;
+                    padding: 20px;
+                    Rectangle { // Wrapper for GroupBox to apply border-radius
+                        background: Theme.surface-background;
+                        border-radius: 8px; // Soften edges
+                        padding: 1px; // A tiny padding to show the border-radius
+
+                        GroupBox {
+                            title: "Files"; // This title will be inside the rounded rectangle
+                            VerticalLayout {
+                                padding: 15px; spacing: 10px;
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Input WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.input-wav-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-input-wav(); }
+                                }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Input PNG:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.input-png-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-input-png(); }
+                                }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Output WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.output-wav-path; read-only: true; }
+                                    StyledButton { text: "Save As..."; clicked => root.browse-output-wav(); }
+                                }
+                            }
+                        }
+                    }
+                    StyledButton { text: "Encode"; enabled: root.encode-button-enabled; clicked => root.request-encode(); }
                 }
+            }
+            Tab {
+                title: "Decode";
+                 VerticalLayout {
+                    spacing: 15px;
+                    padding: 20px;
+                    Rectangle { // Wrapper for GroupBox to apply border-radius
+                        background: Theme.surface-background;
+                        border-radius: 8px; // Soften edges
+                        padding: 1px; // A tiny padding to show the border-radius
 
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Input PNG:"; vertical-alignment: center; }
-                    LineEdit { text: root.input-png-path; read-only: true; }
-                    Button { text: "Browse..."; clicked => root.browse-input-png(); }
-                }
-
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Output WAV:"; vertical-alignment: center; }
-                    LineEdit { text: root.output-wav-path; read-only: true; }
-                    Button { text: "Save As..."; clicked => root.browse-output-wav(); }
-                }
-
-                Button {
-                    text: "Encode";
-                    enabled: root.encode-button-enabled;
-                    clicked => root.request-encode();
-                }
-
-                Text {
-                    text: root.status-text;
+                        GroupBox {
+                            title: "Files"; // This title will be inside the rounded rectangle
+                            VerticalLayout {
+                                padding: 15px; spacing: 10px;
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Input WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-input-wav-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-input-wav(); }
+                                }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Output WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-output-wav-path; read-only: true; }
+                                    StyledButton { text: "Save As..."; clicked => root.browse-decode-output-wav(); }
+                                }
+                                 HorizontalLine {}
+                                 HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Output PNG:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-output-png-path; read-only: true; }
+                                    StyledButton { text: "Save As..."; clicked => root.browse-decode-output-png(); }
+                                }
+                            }
+                        }
+                    }
+                    StyledButton { text: "Decode"; enabled: root.decode-button-enabled; clicked => root.request-decode(); }
                 }
             }
         }
-        Tab {
-            title: "Decode";
-            VerticalLayout {
-                padding: 10px;
-                spacing: 10px;
-
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Input WAV:"; vertical-alignment: center; }
-                    LineEdit { text: root.decode-input-wav-path; read-only: true; }
-                    Button { text: "Browse..."; clicked => root.browse-decode-input-wav(); }
-                }
-
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Output WAV:"; vertical-alignment: center; }
-                    LineEdit { text: root.decode-output-wav-path; read-only: true; }
-                    Button { text: "Save As..."; clicked => root.browse-decode-output-wav(); }
-                }
-
-                HorizontalLayout {
-                    spacing: 5px;
-                    Text { text: "Output PNG:"; vertical-alignment: center; }
-                    LineEdit { text: root.decode-output-png-path; read-only: true; }
-                    Button { text: "Save As..."; clicked => root.browse-decode-output-png(); }
-                }
-
-                Button {
-                    text: "Decode";
-                    enabled: root.decode-button-enabled;
-                    clicked => root.request-decode();
-                }
-
-                Text {
-                    text: root.status-text;
-                }
+        
+        // Footer
+        Rectangle {
+            height: 40px;
+            background: Theme.surface-background;
+            padding-left: 20px;
+            padding-right: 20px;
+            // No border-radius here, as it's not a container for content
+             HorizontalLayout {
+                Text { text: root.status-text; color: root.status-color; vertical-alignment: center; }
             }
         }
     }

@@ -1,7 +1,7 @@
 use rfd::FileDialog;
-use std::{path::PathBuf, thread};
 use slint::{PlatformError, SharedString, Weak};
 use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{path::PathBuf, thread};
 
 slint::include_modules!();
 
@@ -117,7 +117,7 @@ pub fn run() -> Result<(), PlatformError> {
             check_all_decode_paths(&ui);
         }
     });
-    
+
     let ui_handle_clone = ui_handle.clone();
     ui.on_browse_decode_output_png(move || {
         let ui = ui_handle_clone.unwrap();
@@ -148,14 +148,17 @@ pub fn run() -> Result<(), PlatformError> {
             .unwrap();
     });
 
-
     // --- UI Message Handler ---
     let timer = slint::Timer::default();
-    timer.start(slint::TimerMode::Repeated, std::time::Duration::from_millis(100), move || {
-        if let Ok(message) = ui_rx.try_recv() {
-            handle_ui_message(ui_handle.clone(), message);
-        }
-    });
+    timer.start(
+        slint::TimerMode::Repeated,
+        std::time::Duration::from_millis(100),
+        move || {
+            if let Ok(message) = ui_rx.try_recv() {
+                handle_ui_message(ui_handle.clone(), message);
+            }
+        },
+    );
 
     ui.run()
 }
@@ -178,7 +181,11 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                         .unwrap(),
                 }
             }
-            WorkerMessage::Decode { wav_in, wav_out, png_out } => {
+            WorkerMessage::Decode {
+                wav_in,
+                wav_out,
+                png_out,
+            } => {
                 ui_tx.send(UIMessage::Status("Decoding...".into())).unwrap();
                 match crate::decoder::decode(&wav_in, &wav_out, &png_out) {
                     Ok(_) => ui_tx
@@ -197,7 +204,19 @@ fn handle_ui_message(ui_handle: Weak<AppWindow>, message: UIMessage) {
     if let Some(ui) = ui_handle.upgrade() {
         match message {
             UIMessage::Status(status) => {
+                let theme = ui.global::<Theme>();
+                let status_str = status.as_str();
+
+                let color = if status_str.starts_with("Error") {
+                    theme.get_error()
+                } else if status_str.ends_with("complete!") {
+                    theme.get_success()
+                } else {
+                    theme.get_text_normal()
+                };
+
                 ui.set_status_text(status);
+                ui.set_status_color(color);
             }
         }
     }

@@ -88,9 +88,9 @@ pub fn encode(wav_in: &PathBuf, png_in: &PathBuf, output: &PathBuf) -> Result<()
 mod tests {
     use super::*;
     use crate::decoder;
+    use hound::{SampleFormat, WavSpec};
     use std::fs;
     use tempfile::tempdir;
-    use hound::{WavSpec, SampleFormat};
 
     #[test]
     fn test_lossless_encode_decode_16bit() -> anyhow::Result<()> {
@@ -134,24 +134,25 @@ mod tests {
         // 2. Create a dummy WAV file with the specified format
         match (spec.sample_format, spec.bits_per_sample) {
             (SampleFormat::Int, 16) => {
-                let original_wav_data: Vec<i16> = (0..100).map(|i| (i * 100 - 5000) as i16).collect();
+                let original_wav_data: Vec<i16> =
+                    (0..100).map(|i| (i * 100 - 5000) as i16).collect();
                 utils::write_wav_16bit(&original_wav_path, spec, &original_wav_data)?;
-            },
+            }
             (SampleFormat::Int, 24) => {
-                 let mut writer = hound::WavWriter::create(&original_wav_path, spec)?;
-                 for i in 0..100 {
-                     writer.write_sample((i * 10000 - 500000) as i32)?;
-                 }
-                 writer.finalize()?;
-            },
+                let mut writer = hound::WavWriter::create(&original_wav_path, spec)?;
+                for i in 0..100 {
+                    writer.write_sample((i * 10000 - 500000) as i32)?;
+                }
+                writer.finalize()?;
+            }
             (SampleFormat::Float, 32) => {
                 let mut writer = hound::WavWriter::create(&original_wav_path, spec)?;
                 for i in 0..100 {
                     writer.write_sample((i as f32 * 0.01) - 0.5)?;
                 }
                 writer.finalize()?;
-            },
-            _ => unimplemented!()
+            }
+            _ => unimplemented!(),
         }
 
         // 3. Create a dummy PNG file (can be larger now due to compression)
@@ -169,8 +170,11 @@ mod tests {
 
         // 6. Verify lossless restoration of PNG
         let decoded_png_bytes = fs::read(&decoded_png_path)?;
-        assert_eq!(original_png_data, decoded_png_bytes, "PNG files do not match");
-        
+        assert_eq!(
+            original_png_data, decoded_png_bytes,
+            "PNG files do not match"
+        );
+
         // 7. Verify WAV data (optional, as LSB is lossy for the audio)
         // We can't do a direct byte comparison of the WAVs anymore because
         // the output is always 32-bit and the LSBs are modified.

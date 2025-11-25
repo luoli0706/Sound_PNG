@@ -12,14 +12,18 @@ pub fn decode(input: &PathBuf, wav_out: &PathBuf, png_out: &PathBuf) -> Result<(
 
     // Ensure we are reading a 32-bit integer WAV file as expected
     if spec.sample_format != hound::SampleFormat::Int || spec.bits_per_sample != 32 {
-        return Err(anyhow!("Invalid encoded file: must be a 32-bit integer WAV file."));
+        return Err(anyhow!(
+            "Invalid encoded file: must be a 32-bit integer WAV file."
+        ));
     }
-    
+
     let encoded_data: Vec<i32> = reader.samples::<i32>().collect::<Result<_, _>>()?;
 
     let metadata_len = 4;
     if encoded_data.len() < metadata_len {
-        return Err(anyhow!("Invalid encoded file: not enough data for metadata."));
+        return Err(anyhow!(
+            "Invalid encoded file: not enough data for metadata."
+        ));
     }
 
     // --- Bitwise Decoding ---
@@ -33,9 +37,9 @@ pub fn decode(input: &PathBuf, wav_out: &PathBuf, png_out: &PathBuf) -> Result<(
     ];
 
     let original_png_len = ((len_chunks[0] as u64) << 48)
-                         | ((len_chunks[1] as u64) << 32)
-                         | ((len_chunks[2] as u64) << 16)
-                         | (len_chunks[3] as u64);
+        | ((len_chunks[1] as u64) << 32)
+        | ((len_chunks[2] as u64) << 16)
+        | (len_chunks[3] as u64);
 
     // 2. Decode Payload
     let mut decoded_wav_data: Vec<i16> = Vec::with_capacity(encoded_data.len());
@@ -54,18 +58,22 @@ pub fn decode(input: &PathBuf, wav_out: &PathBuf, png_out: &PathBuf) -> Result<(
     }
 
     // --- Decompress and Finalize Data ---
-    
+
     // 3. Decompress the extracted PNG data
     let mut decoder = DeflateDecoder::new(&compressed_png_bytes[..]);
     let mut decompressed_png_bytes = Vec::new();
-    
+
     // Read the exact number of bytes of the original file from the decompressor
     decoder.read_to_end(&mut decompressed_png_bytes)?;
-    
+
     // Truncate to the original size just in case of any padding/stream issues
     decompressed_png_bytes.truncate(original_png_len as usize);
     if decompressed_png_bytes.len() != original_png_len as usize {
-        return Err(anyhow!("Decompression failed: expected {} bytes, got {}", original_png_len, decompressed_png_bytes.len()));
+        return Err(anyhow!(
+            "Decompression failed: expected {} bytes, got {}",
+            original_png_len,
+            decompressed_png_bytes.len()
+        ));
     }
 
     // 4. Write the new 16-bit WAV file and the restored PNG file
