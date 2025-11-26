@@ -1,1 +1,5 @@
+# Ignore all .exe files
+*.exe
+
+# Ignore target directory
 /target
