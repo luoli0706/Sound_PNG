@@ -1,64 +1,58 @@
-# Sound PNG — Alpha 1.1 / 声音隐写工具 Alpha 1.1
+# Sound_PNG (Beta 1.0)
 
-Sound PNG is the alpha 1.1 build of a Rust + Slint desktop app for hiding 16-bit PNG byte streams inside 32-bit WAV containers with zero perceptible loss. / Sound PNG 是一个基于 Rust 与 Slint 的桌面应用，Alpha 1.1 版本实现了在 32-bit WAV 容器中无损封装 16-bit PNG 数据流。
+A high-performance, secure, bi-directional steganography tool written in Rust. Hide your secrets in plain sight—or plain sound.
+一个高性能、安全的双向隐写工具，使用 Rust 编写。将您的秘密隐藏在显眼处——或平凡的声音中。
 
-> Built using BMAD Method workflows plus Google's Gemini CLI for planning, specification, and automated checks. / 本项目采用 **BMAD Method** 工作流与 **Google Gemini CLI** 协作完成规划、需求与自动化检视。
+## 🌟 Key Features / 主要特性
 
----
+### 1. Bi-Directional Steganography / 双向隐写
+- **Voice Carrier**: Hide any file (Image, Text, etc.) inside a 32-bit WAV audio file.
+- **语音载体**: 将任何文件（图片、文本等）隐藏在 32 位 WAV 音频文件中。
+- **Picture Carrier**: Hide audio (or any file) inside a PNG image.
+- **图片载体**: 将音频（或任何文件）隐藏在 PNG 图片中。
+- **Auto-Expand**: Automatically resizes the container image to fit large payloads.
+- **自动扩容**: 自动调整容器图片大小以适应较大的负载。
 
-## Quick Start / 快速开始
+### 2. Multi-Format Support / 多格式支持
+- **Audio Inputs**: WAV, MP3 (Normalized to 16-bit PCM).
+- **音频输入**: WAV, MP3（归一化为 16 位 PCM）。
+- **Payload Inputs**: PNG, JPG, JPEG, or any binary file.
+- **负载输入**: PNG, JPG, JPEG 或任何二进制文件。
+- **Output**: 
+    - 32-bit PCM WAV (Lossless Container).
+    - 16-bit RGBA PNG (Lossless Container).
+- **输出**:
+    - 32 位 PCM WAV（无损容器）。
+    - 16 位 RGBA PNG（无损容器）。
 
-1. **Install prerequisites / 安装依赖**
-   - Rust 1.75+ toolchain with `cargo`
-   - Windows 10/11、macOS 或主流 Linux（具备 Slint 所需桌面图形栈）
-2. **Clone repository / 克隆仓库**
-   ```powershell
-   git clone https://github.com/luoli0706/Sound_PNG.git
-   cd Sound_PNG/sound_png
-   ```
-3. **Run GUI encoder / 运行图形界面编码器**
-   ```powershell
-   cargo run --release
-   ```
-   - Select a 16-bit PCM WAV (carrier) and PNG (payload). / 通过界面选择 16-bit PCM WAV 载体与 PNG 负载。
-4. **CLI decode / 命令行解码**
-   ```powershell
-   cargo run --release -- --mode decode --input <32bit.wav> --wav-out <wav_path> --png-out <png_path>
-   ```
-5. **Run tests / 执行测试**
-   ```powershell
-   cargo test
-   ```
+### 3. The "Four Judges" Security System / "四法官" 安全系统
+An optional, military-grade security layer.
+可选的军用级安全层。
+- **1st Judge (Encryption)**: Stream cipher (XOR) using ChaCha8.
+- **第一法官（加密）**: 使用 ChaCha8 的流密码（XOR）。
+- **2nd Judge (Unpredictability)**: Timestamp-based dynamic seeding.
+- **第二法官（不可预测性）**: 基于时间戳的动态种子。
+- **3rd Judge (Integrity)**: SHA-256 Hash verification to detect tampering.
+- **第三法官（完整性）**: SHA-256 哈希校验以检测篡改。
+- **4th Judge (Physical Key)**: Optional external Key File mixed into the encryption stream.
+- **第四法官（物理密钥）**: 可选的外部密钥文件，混合入加密流中。
 
----
+## 📦 Installation / 安装
 
-## Project Overview / 项目说明
+Download the latest release `Sound_PNG_Beta_1_0.exe`.
+下载最新发布的 `Sound_PNG_Beta_1_0.exe`。
 
-- **Tech Stack / 技术栈**: Rust 2021, Slint UI, Clap, Hound, rfd, flate2.
-- **Core Flow / 核心流程**: Split MSB/LSB from 16-bit streams, merge into 32-bit PCM samples, then reverse the bit operations for extraction.
-- **Tooling / 开发工具**: Requirements captured via BMAD Method agent workflows; Gemini CLI drives scripted experiments and doc syncing.
-- **Current Focus / 当前重点**: Stabilize encoder throughput, refine decoder validation, maintain responsive Slint UI for large WAV/PNG pairs.
+## 📖 Documentation / 文档
 
----
+- [User Manual / 用户手册](docs/User_Manual.md) - How to use the tool. / 如何使用工具。
+- [Developer Documentation / 开发者文档](docs/Developer_Documentation.md) - Architecture and Logic. / 架构与逻辑。
 
-## Alpha 1.1 Notes & Limitations / Alpha 1.1 说明与限制
+## 🛠 Build from Source / 源码构建
 
-- Experimental build; not production-ready. / 试验版本，暂不建议用于生产环境。
-- Only supports 16-bit PCM WAV input and outputs signed 32-bit PCM WAV. / 仅支持 16-bit PCM 输入与 32-bit PCM (signed) 输出。
-- PNG payload size must fit within WAV duration; no streaming mode yet. / PNG 负载需可完全容纳于 WAV 时长，尚未支持流式处理。
-- No cryptographic protection; data is only hidden via bit interleaving. / 未提供加密，数据仅通过位拆分隐藏。
-- Tested on Windows 11 + Rust 1.75; other platforms require additional validation. / 仅在 Windows 11 + Rust 1.75 上验证，其它平台尚需测试。
+```bash
+cd sound_png
+cargo build --release
+```
 
----
-
-## Contributing / 贡献指南
-
-1. Branch from `main` and keep commits focused. / 基于 `main` 建立分支并保持精简提交。
-2. Run `cargo fmt && cargo clippy && cargo test` before pushing. / 提交前需通过格式化、静态检查与测试。
-3. Document architecture changes (English or Chinese). / 更新架构或流程时请附中英文简要说明。
-
----
-
-## License / 许可
-
-MIT License — see `LICENSE`. / 采用 MIT 许可，详见 `LICENSE` 文件。
+## 📝 License / 许可证
+MIT License

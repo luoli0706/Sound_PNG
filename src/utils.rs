@@ -48,10 +48,12 @@ pub fn read_and_normalize_wav(path: &PathBuf) -> Result<(WavSpec, Vec<i16>)> {
 }
 
 // The old function is kept for compatibility, but now uses the new normalization.
+#[allow(dead_code)]
 pub fn read_wav_16bit(path: &PathBuf) -> anyhow::Result<(WavSpec, Vec<i16>)> {
     read_and_normalize_wav(path)
 }
 
+#[allow(dead_code)]
 pub fn read_png(path: &PathBuf) -> anyhow::Result<Vec<u8>> {
     let data = fs::read(path)?;
     Ok(data)

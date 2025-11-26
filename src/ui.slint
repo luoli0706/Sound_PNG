@@ -1,33 +1,25 @@
-import { TabWidget, LineEdit, GroupBox } from "std-widgets.slint";
+import { TabWidget, LineEdit, GroupBox, CheckBox, ComboBox } from "std-widgets.slint";
 
-// A more vibrant, gradient-based theme
 export global Theme {
-    in property <brush> window-background: @linear-gradient(135deg, #1f232c 0%, #3a404c 100%); // More distinct dark gradient
-    in property <brush> surface-background: @linear-gradient(135deg, #3a404c 0%, #1f232c 100%); // More distinct surface gradient
-
+    in property <brush> window-background: @linear-gradient(135deg, #1f232c 0%, #3a404c 100%);
+    in property <brush> surface-background: @linear-gradient(135deg, #3a404c 0%, #1f232c 100%);
     in property <color> primary: #88c0d0;
     in property <color> primary-dark: #5e81ac;
-    
     in property <color> text-strong: #ffffff;
-    in property <color> text-normal: #ffffff; // Bright white for maximum contrast
+    in property <color> text-normal: #ffffff;
     in property <color> text-faded: #abb2bf;
-    
     in property <color> success: #a3be8c;
     in property <color> error: #bf616a;
-    in property <color> border: #4c566a; // Slightly lighter border for visibility
+    in property <color> border: #4c566a;
 }
 
-// Custom button with the new theme
 component StyledButton inherits TouchArea {
     in property <string> text;
-
     height: 34px;
     min-width: 80px;
-
     Rectangle {
         background: root.enabled ? (root.pressed ? Theme.primary-dark : (root.has-hover ? Theme.primary.darker(10%) : Theme.primary)) : Theme.surface-background;
         border-radius: 4px;
-
         Text {
             text: root.text;
             color: root.enabled ? Theme.text-strong : Theme.text-faded;
@@ -43,31 +35,44 @@ component HorizontalLine inherits Rectangle {
 }
 
 export component AppWindow inherits Window {
-    title: "Sound PNG";
+    title: "Sound PNG - Bi-Directional Steganography (Beta 1.0)";
     width: 700px;
-    height: 480px; 
+    height: 600px;
     background: Theme.window-background;
     
     // == App Properties ==
-    in-out property <string> input-wav-path;
-    in-out property <string> input-png-path;
-    in-out property <string> output-wav-path;
+    in-out property <string> input-voice-path;
+    in-out property <string> input-picture-path;
+    in-out property <string> key-file-path;
+    in-out property <string> output-path;
+    in-out property <string> output-format: "WAV"; 
+    
     in property <bool> encode-button-enabled: false;
-    in-out property <string> decode-input-wav-path;
-    in-out property <string> decode-output-wav-path;
-    in-out property <string> decode-output-png-path;
+    in-out property <bool> use-encryption: false;
+    
+    in-out property <string> decode-input-path;
+    in-out property <string> decode-output-voice-path;
+    in-out property <string> decode-output-picture-path;
+    in-out property <string> decode-key-file-path;
+    
     in property <bool> decode-button-enabled: false;
+    in-out property <bool> is-encrypted-source: false; // Set by backend analysis
+    in-out property <bool> input-analyzed: false; // Validated header
+
     in-out property <string> status-text: "Ready.";
     in-out property <color> status-color: Theme.text-normal;
 
     // == Callbacks ==
-    callback browse-input-wav();
-    callback browse-input-png();
-    callback browse-output-wav();
+    callback browse-input-voice();
+    callback browse-input-picture();
+    callback browse-key-file();
+    callback browse-output();
     callback request-encode();
-    callback browse-decode-input-wav();
-    callback browse-decode-output-wav();
-    callback browse-decode-output-png();
+    
+    callback browse-decode-input();
+    callback browse-decode-output-voice();
+    callback browse-decode-output-picture();
+    callback browse-decode-key-file();
     callback request-decode();
 
     VerticalLayout {
@@ -80,7 +85,6 @@ export component AppWindow inherits Window {
             background: Theme.surface-background;
             padding-left: 20px;
             padding-right: 20px;
-            // No border-radius here, as it's not a container for content
             Text {
                 text: "Sound PNG Steganography Tool";
                 color: Theme.text-strong;
@@ -96,38 +100,71 @@ export component AppWindow inherits Window {
                 VerticalLayout {
                     spacing: 15px;
                     padding: 20px;
-                    Rectangle { // Wrapper for GroupBox to apply border-radius
+                    Rectangle {
                         background: Theme.surface-background;
-                        border-radius: 8px; // Soften edges
-                        padding: 1px; // A tiny padding to show the border-radius
-
+                        border-radius: 8px;
+                        padding: 1px;
                         GroupBox {
-                            title: "Files"; // This title will be inside the rounded rectangle
+                            title: "Inputs & Output"; 
                             VerticalLayout {
                                 padding: 15px; spacing: 10px;
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Input WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.input-wav-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-input-wav(); }
+                                    Text { text: "Input Voice:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.input-voice-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-input-voice(); }
                                 }
                                 HorizontalLine {}
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Input PNG:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.input-png-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-input-png(); }
+                                    Text { text: "Input Picture:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.input-picture-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-input-picture(); }
                                 }
                                 HorizontalLine {}
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Output WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.output-wav-path; read-only: true; }
-                                    StyledButton { text: "Save As..."; clicked => root.browse-output-wav(); }
+                                    Text { text: "Format:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    ComboBox { 
+                                        model: ["WAV", "PNG"];
+                                        current-value: root.output-format;
+                                        selected => { root.output-format = self.current-value; }
+                                        width: 100px;
+                                    }
+                                    Text { text: "Save As:"; vertical-alignment: center; color: Theme.text-normal; min-width: 60px; }
+                                    LineEdit { text: root.output-path; read-only: true; }
+                                    StyledButton { text: "Save..."; clicked => root.browse-output(); }
                                 }
                             }
                         }
                     }
+                    
+                    CheckBox {
+                        text: "Enable High Security (Three Judges System)";
+                        checked <=> root.use-encryption;
+                    }
+                    
+                    // Key File Input - Only visible if Encryption is enabled
+                    Rectangle {
+                        visible: root.use-encryption;
+                        background: Theme.surface-background;
+                        border-radius: 8px;
+                        padding: 1px;
+                        height: 60px; // Explicit height when visible
+                        GroupBox {
+                             title: "Fourth Judge (Physical Key)";
+                             VerticalLayout {
+                                padding: 5px;
+                                HorizontalLayout {
+                                    spacing: 10px;
+                                    Text { text: "Key File:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.key-file-path; read-only: true; placeholder-text: "Optional but recommended"; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-key-file(); }
+                                }
+                             }
+                        }
+                    }
+
                     StyledButton { text: "Encode"; enabled: root.encode-button-enabled; clicked => root.request-encode(); }
                 }
             }
@@ -136,34 +173,44 @@ export component AppWindow inherits Window {
                  VerticalLayout {
                     spacing: 15px;
                     padding: 20px;
-                    Rectangle { // Wrapper for GroupBox to apply border-radius
+                    Rectangle {
                         background: Theme.surface-background;
-                        border-radius: 8px; // Soften edges
-                        padding: 1px; // A tiny padding to show the border-radius
-
+                        border-radius: 8px;
+                        padding: 1px;
                         GroupBox {
-                            title: "Files"; // This title will be inside the rounded rectangle
+                            title: "Restoration";
                             VerticalLayout {
                                 padding: 15px; spacing: 10px;
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Input WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-input-wav-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-input-wav(); }
+                                    Text { text: "Encoded File:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-input-path; read-only: true; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-input(); }
                                 }
+                                
+                                // Key File Input - Only visible if Source is Encrypted
+                                HorizontalLine { visible: root.is-encrypted-source; }
+                                HorizontalLayout {
+                                    visible: root.is-encrypted-source;
+                                    spacing: 10px;
+                                    Text { text: "Key File (Req):"; vertical-alignment: center; color: Theme.error; min-width: 90px; }
+                                    LineEdit { text: root.decode-key-file-path; read-only: true; placeholder-text: "Required for decryption"; }
+                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-key-file(); }
+                                }
+                                
                                 HorizontalLine {}
                                 HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Output WAV:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-output-wav-path; read-only: true; }
-                                    StyledButton { text: "Save As..."; clicked => root.browse-decode-output-wav(); }
+                                    Text { text: "Save Voice:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-output-voice-path; read-only: true; }
+                                    StyledButton { text: "Save..."; clicked => root.browse-decode-output-voice(); }
                                 }
                                  HorizontalLine {}
                                  HorizontalLayout {
                                     spacing: 10px;
-                                    Text { text: "Output PNG:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-output-png-path; read-only: true; }
-                                    StyledButton { text: "Save As..."; clicked => root.browse-decode-output-png(); }
+                                    Text { text: "Save Picture:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
+                                    LineEdit { text: root.decode-output-picture-path; read-only: true; }
+                                    StyledButton { text: "Save..."; clicked => root.browse-decode-output-picture(); }
                                 }
                             }
                         }
@@ -179,7 +226,6 @@ export component AppWindow inherits Window {
             background: Theme.surface-background;
             padding-left: 20px;
             padding-right: 20px;
-            // No border-radius here, as it's not a container for content
              HorizontalLayout {
                 Text { text: root.status-text; color: root.status-color; vertical-alignment: center; }
             }
