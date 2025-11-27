@@ -14,15 +14,21 @@ pub struct Header {
     pub payload_len: u64,
     pub timestamp: u64,
     pub hash: [u8; 32],
+    pub extension: [u8; 8], // New field for file extension
 }
 
 impl Header {
-    pub fn new(payload_len: u64, encrypted: bool, timestamp: u64, hash: [u8; 32]) -> Self {
+    pub fn new(payload_len: u64, encrypted: bool, timestamp: u64, hash: [u8; 32], ext_str: &str) -> Self {
         let mut flags = 0;
         if encrypted {
             flags |= 0x01;
         }
-        flags |= 0x02; // Compressed (we always compress for now)
+        flags |= 0x02; // Compressed
+
+        let mut extension = [0u8; 8];
+        let bytes = ext_str.as_bytes();
+        let len = bytes.len().min(8);
+        extension[0..len].copy_from_slice(&bytes[0..len]);
 
         Self {
             magic: *MAGIC,
@@ -31,6 +37,7 @@ impl Header {
             payload_len,
             timestamp,
             hash,
+            extension,
         }
     }
 
@@ -44,6 +51,7 @@ impl Header {
         bytes[13] = self.flags;
         bytes[14..22].copy_from_slice(&self.timestamp.to_le_bytes());
         bytes[22..54].copy_from_slice(&self.hash);
+        bytes[54..62].copy_from_slice(&self.extension);
         // Remaining bytes are zero-padded by default
 
         // Convert bytes to u16 chunks (Little Endian)
@@ -74,6 +82,7 @@ impl Header {
         let flags = bytes[13];
         let timestamp = u64::from_le_bytes(bytes[14..22].try_into().unwrap());
         let hash: [u8; 32] = bytes[22..54].try_into().unwrap();
+        let extension: [u8; 8] = bytes[54..62].try_into().unwrap();
 
         Ok(Self {
             magic,
@@ -82,6 +91,7 @@ impl Header {
             payload_len,
             timestamp,
             hash,
+            extension,
         })
     }
 }

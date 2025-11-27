@@ -8,7 +8,19 @@ use image::{DynamicImage, io::Reader as ImageReader};
 
 /// 加载图像为 DynamicImage 对象，用于像素级操作
 pub fn load_image_object(path: &Path) -> Result<DynamicImage> {
-    let reader = ImageReader::open(path).context("Failed to open image file")?;
+    // println!("Loading Image: {:?}", path);
+    let mut reader = ImageReader::open(path).context(format!("Failed to open image file: {:?}", path))?.with_guessed_format()?;
+    
+    if reader.format().is_none() {
+        if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+            if ext.eq_ignore_ascii_case("png") {
+                reader.set_format(image::ImageFormat::Png);
+            } else if ext.eq_ignore_ascii_case("jpg") || ext.eq_ignore_ascii_case("jpeg") {
+                reader.set_format(image::ImageFormat::Jpeg);
+            }
+        }
+    }
+
     let image = reader.decode().context("Failed to decode image")?;
     Ok(image)
 }

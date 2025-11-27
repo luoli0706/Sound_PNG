@@ -1,16 +1,83 @@
-import { TabWidget, LineEdit, GroupBox, CheckBox, ComboBox } from "std-widgets.slint";
+import { TabWidget, LineEdit, GroupBox, CheckBox, ComboBox, Button, Switch, VerticalBox, ProgressIndicator, ScrollView, ListView } from "std-widgets.slint";
+
+export struct MdBlock {
+    block_type: string, // "h1", "h2", "h3", "p", "li", "code"
+    text: string,
+}
+
+export global Settings {
+    in-out property <string> language: "cn"; // Default to Chinese
+    in-out property <bool> dark-mode: false; // Default to Light
+}
 
 export global Theme {
-    in property <brush> window-background: @linear-gradient(135deg, #1f232c 0%, #3a404c 100%);
-    in property <brush> surface-background: @linear-gradient(135deg, #3a404c 0%, #1f232c 100%);
+    in property <brush> window-background: Settings.dark-mode ? @linear-gradient(135deg, #1f232c 0%, #3a404c 100%) : @linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+    in property <brush> surface-background: Settings.dark-mode ? @linear-gradient(135deg, #3a404c 0%, #1f232c 100%) : @linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+    in property <brush> overlay-background: Settings.dark-mode ? #000000aa : #ffffffaa;
+    
     in property <color> primary: #88c0d0;
     in property <color> primary-dark: #5e81ac;
-    in property <color> text-strong: #ffffff;
-    in property <color> text-normal: #ffffff;
-    in property <color> text-faded: #abb2bf;
+    
+    in property <color> text-strong: Settings.dark-mode ? #ffffff : #2e3440;
+    in property <color> text-normal: Settings.dark-mode ? #e5e9f0 : #3b4252;
+    in property <color> code-bg: Settings.dark-mode ? #2c323c : #e5e9f0;
+    
     in property <color> success: #a3be8c;
     in property <color> error: #bf616a;
-    in property <color> border: #4c566a;
+    
+    in property <color> border: Settings.dark-mode ? #4c566a : #d8dee9;
+}
+
+export global Texts {
+    out property <string> app_title: Settings.language == "cn" ? "Sound PNG - 通用隐写工具" : "Sound PNG - Universal Steganography";
+    out property <string> tab_encode: Settings.language == "cn" ? "编码 (隐藏)" : "Encode";
+    out property <string> tab_decode: Settings.language == "cn" ? "解码 (恢复)" : "Decode";
+    out property <string> tab_settings: Settings.language == "cn" ? "设置" : "Settings";
+    
+    out property <string> subtab_std: Settings.language == "cn" ? "标准模式" : "Standard Mode";
+    out property <string> subtab_uni: Settings.language == "cn" ? "通用模式" : "Universal Mode";
+    
+    out property <string> lbl_voice: Settings.language == "cn" ? "语音:" : "Voice:";
+    out property <string> lbl_pic: Settings.language == "cn" ? "图片:" : "Picture:";
+    out property <string> lbl_key: Settings.language == "cn" ? "密钥 (可选):" : "Key (Opt):";
+    out property <string> lbl_key_req: Settings.language == "cn" ? "密钥 (必须):" : "Key (Req):";
+    out property <string> lbl_format: Settings.language == "cn" ? "格式:" : "Format:";
+    out property <string> lbl_save_as: Settings.language == "cn" ? "另存为:" : "Save As:";
+    out property <string> lbl_payload: Settings.language == "cn" ? "负载:" : "Payload:";
+    out property <string> lbl_container: Settings.language == "cn" ? "容器:" : "Container:";
+    
+    out property <string> btn_browse: Settings.language == "cn" ? "浏览..." : "Browse...";
+    out property <string> btn_save: Settings.language == "cn" ? "保存..." : "Save...";
+    out property <string> btn_encode: Settings.language == "cn" ? "执行编码" : "Encode";
+    out property <string> btn_decode: Settings.language == "cn" ? "执行解码" : "Decode";
+    
+    out property <string> chk_security: Settings.language == "cn" ? "启用高安全性 (三法官)" : "Enable High Security";
+    
+    out property <string> grp_std_enc: Settings.language == "cn" ? "标准编码" : "Standard Encode";
+    out property <string> grp_std_dec: Settings.language == "cn" ? "标准解码" : "Standard Decode";
+    out property <string> grp_uni_enc: Settings.language == "cn" ? "通用编码" : "Universal Encode";
+    out property <string> grp_uni_dec: Settings.language == "cn" ? "通用解码" : "Universal Decode";
+    
+    out property <string> stg_lang: Settings.language == "cn" ? "语言 / Language" : "Language";
+    out property <string> stg_theme: Settings.language == "cn" ? "主题 / Theme" : "Theme";
+    out property <string> stg_theme_dark: Settings.language == "cn" ? "深色模式" : "Dark Mode";
+    
+    out property <string> splash_text: "Sound PNG Beta 2.0";
+    out property <string> exit_title: Settings.language == "cn" ? "确认退出" : "Confirm Exit";
+    out property <string> exit_msg: Settings.language == "cn" ? "您确定要退出吗？" : "Are you sure you want to exit?";
+    out property <string> btn_exit: Settings.language == "cn" ? "退出程序" : "Exit";
+    out property <string> btn_minimize: Settings.language == "cn" ? "最小化" : "Minimize";
+    out property <string> btn_cancel: Settings.language == "cn" ? "取消" : "Cancel";
+    out property <string> processing: Settings.language == "cn" ? "处理中..." : "Processing...";
+    
+    out property <string> stg_manual: Settings.language == "cn" ? "用户手册" : "User Manual";
+    out property <string> btn_manual: Settings.language == "cn" ? "打开说明书" : "Open Manual";
+    out property <string> stg_version: Settings.language == "cn" ? "版本信息" : "Version Info";
+    
+    out property <string> lbl_preset: Settings.language == "cn" ? "提取模式:" : "Extract Mode:";
+    
+    out property <string> man_title: Settings.language == "cn" ? "用户手册" : "User Manual";
+    out property <string> btn_back: Settings.language == "cn" ? "返回" : "Back";
 }
 
 component StyledButton inherits TouchArea {
@@ -20,9 +87,11 @@ component StyledButton inherits TouchArea {
     Rectangle {
         background: root.enabled ? (root.pressed ? Theme.primary-dark : (root.has-hover ? Theme.primary.darker(10%) : Theme.primary)) : Theme.surface-background;
         border-radius: 4px;
+        border-width: 1px;
+        border-color: Theme.border;
         Text {
             text: root.text;
-            color: root.enabled ? Theme.text-strong : Theme.text-faded;
+            color: root.enabled ? Theme.text-strong : Theme.text-normal;
             vertical-alignment: center;
             horizontal-alignment: center;
         }
@@ -34,19 +103,108 @@ component HorizontalLine inherits Rectangle {
     background: Theme.border;
 }
 
+component ManualOverlay inherits Rectangle {
+    in property <[MdBlock]> content;
+    callback close();
+    
+    background: Theme.window-background;
+    
+    VerticalLayout {
+        padding: 20px;
+        spacing: 10px;
+        
+        // Header
+        HorizontalLayout {
+            Text {
+                text: Texts.man_title;
+                font-size: 24px;
+                font-weight: 700;
+                color: Theme.text-strong;
+                horizontal-alignment: left;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            StyledButton { text: Texts.btn_back; clicked => { root.close(); } }
+        }
+        
+        HorizontalLine {}
+        
+        // Content
+        ListView {
+            for block in root.content : VerticalLayout {
+                padding-bottom: 10px;
+                if block.block_type == "h1" : Text {
+                    text: block.text;
+                    font-size: 22px;
+                    font-weight: 700;
+                    color: Theme.primary;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "h2" : Text {
+                    text: block.text;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: Theme.text-strong;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "h3" : Text {
+                    text: block.text;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: Theme.text-strong;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "p" : Text {
+                    text: block.text;
+                    font-size: 14px;
+                    color: Theme.text-normal;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "li" : HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "•"; color: Theme.primary; }
+                    Text {
+                        text: block.text;
+                        font-size: 14px;
+                        color: Theme.text-normal;
+                        wrap: word-wrap;
+                    }
+                }
+                if block.block_type == "code" : Rectangle {
+                    background: Theme.code-bg;
+                    border-radius: 4px;
+                    padding: 10px;
+                    Text {
+                        text: block.text;
+                        font-size: 12px;
+                        font-family: "Consolas"; // Fallback if not available
+                        color: Theme.text-strong;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+    }
+}
+
 export component AppWindow inherits Window {
-    title: "Sound PNG - Bi-Directional Steganography (Beta 1.0)";
-    width: 700px;
+    title: Texts.app_title;
+    width: 800px;
     height: 600px;
     background: Theme.window-background;
     
-    // == App Properties ==
+    // ... (Rest of properties)
+    
+    // == Manual Properties ==
+    in-out property <bool> show-manual: false;
+    in property <[MdBlock]> manual-content;
+
+    // ... (Rest of AppWindow)
+
     in-out property <string> input-voice-path;
     in-out property <string> input-picture-path;
     in-out property <string> key-file-path;
     in-out property <string> output-path;
     in-out property <string> output-format: "WAV"; 
-    
     in property <bool> encode-button-enabled: false;
     in-out property <bool> use-encryption: false;
     
@@ -54,13 +212,38 @@ export component AppWindow inherits Window {
     in-out property <string> decode-output-voice-path;
     in-out property <string> decode-output-picture-path;
     in-out property <string> decode-key-file-path;
-    
     in property <bool> decode-button-enabled: false;
-    in-out property <bool> is-encrypted-source: false; // Set by backend analysis
-    in-out property <bool> input-analyzed: false; // Validated header
+    in-out property <bool> is-encrypted-source: false;
+    in-out property <bool> input-analyzed: false;
+
+    // == Universal Mode Properties ==
+    in-out property <string> uni-payload-path;
+    in-out property <string> uni-container-path;
+    in-out property <string> uni-output-path;
+    in-out property <string> uni-key-path;
+    in property <bool> uni-encode-enabled: false;
+    in-out property <bool> uni-use-encryption: false;
+
+    in-out property <string> uni-decode-input-path;
+    in-out property <string> uni-decode-payload-out;
+    in-out property <string> uni-decode-container-out;
+    in-out property <string> uni-decode-key-path;
+    in property <bool> uni-decode-enabled: false;
+    in-out property <bool> uni-decode-analyzed: false;
+    in-out property <bool> uni-decode-encrypted: false;
+    
+    // Preset Index: 0=Auto, 1=PNG, 2=ZIP, 3=APK, 4=EXE
+    in-out property <int> uni-decode-preset-index: 0;
 
     in-out property <string> status-text: "Ready.";
     in-out property <color> status-color: Theme.text-normal;
+    
+    // == New UX Properties ==
+    in-out property <bool> show-splash: true;
+    in-out property <float> splash-opacity: 1.0;
+    in-out property <bool> show-exit-dialog: false;
+    in-out property <bool> is-busy: false;
+    in-out property <float> progress-value: 0.0;
 
     // == Callbacks ==
     callback browse-input-voice();
@@ -68,12 +251,30 @@ export component AppWindow inherits Window {
     callback browse-key-file();
     callback browse-output();
     callback request-encode();
-    
     callback browse-decode-input();
     callback browse-decode-output-voice();
     callback browse-decode-output-picture();
     callback browse-decode-key-file();
     callback request-decode();
+
+    callback browse-uni-payload();
+    callback browse-uni-container();
+    callback browse-uni-output();
+    callback browse-uni-key();
+    callback request-uni-encode();
+    
+    callback browse-uni-decode-input();
+    callback browse-uni-decode-payload-out();
+    callback browse-uni-decode-container-out();
+    callback browse-uni-decode-key();
+    callback request-uni-decode();
+    
+    callback minimize-window();
+    callback close-window();
+    callback open-manual();
+    
+    // Handle Close Request
+    callback request-close-app(); // Triggered by UI close button or OS
 
     VerticalLayout {
         alignment: stretch;
@@ -86,7 +287,7 @@ export component AppWindow inherits Window {
             padding-left: 20px;
             padding-right: 20px;
             Text {
-                text: "Sound PNG Steganography Tool";
+                text: Texts.app_title;
                 color: Theme.text-strong;
                 font-size: 18px;
                 vertical-alignment: center;
@@ -95,127 +296,271 @@ export component AppWindow inherits Window {
         
         // Main Content
         TabWidget {
+            // === Tab 1: Encode ===
             Tab {
-                title: "Encode";
+                title: Texts.tab_encode;
                 VerticalLayout {
-                    spacing: 15px;
-                    padding: 20px;
-                    Rectangle {
-                        background: Theme.surface-background;
-                        border-radius: 8px;
-                        padding: 1px;
-                        GroupBox {
-                            title: "Inputs & Output"; 
+                    padding: 10px;
+                    TabWidget {
+                        Tab {
+                            title: Texts.subtab_std;
                             VerticalLayout {
-                                padding: 15px; spacing: 10px;
-                                HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Input Voice:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.input-voice-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-input-voice(); }
-                                }
-                                HorizontalLine {}
-                                HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Input Picture:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.input-picture-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-input-picture(); }
-                                }
-                                HorizontalLine {}
-                                HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Format:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    ComboBox { 
-                                        model: ["WAV", "PNG"];
-                                        current-value: root.output-format;
-                                        selected => { root.output-format = self.current-value; }
-                                        width: 100px;
+                                padding: 20px; spacing: 20px;
+                                Rectangle {
+                                    background: Theme.surface-background;
+                                    border-radius: 8px;
+                                    padding: 1px;
+                                    GroupBox {
+                                        title: Texts.grp_std_enc;
+                                        VerticalLayout {
+                                            padding: 15px; spacing: 10px;
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_voice; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.input-voice-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-input-voice(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_pic; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.input-picture-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-input-picture(); }
+                                            }
+                                            HorizontalLine { visible: root.use-encryption; }
+                                            HorizontalLayout {
+                                                visible: root.use-encryption;
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_key; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.key-file-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-key-file(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_format; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                ComboBox { model: ["WAV", "PNG"]; current-value: root.output-format; selected => { root.output-format = self.current-value; } width: 100px; }
+                                                Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 60px; }
+                                                LineEdit { text: root.output-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-output(); }
+                                            }
+                                        }
                                     }
-                                    Text { text: "Save As:"; vertical-alignment: center; color: Theme.text-normal; min-width: 60px; }
-                                    LineEdit { text: root.output-path; read-only: true; }
-                                    StyledButton { text: "Save..."; clicked => root.browse-output(); }
                                 }
+                                CheckBox { text: Texts.chk_security; checked <=> root.use-encryption; }
+                                StyledButton { text: Texts.btn_encode; enabled: root.encode-button-enabled; clicked => root.request-encode(); }
+                            }
+                        }
+                        Tab {
+                            title: Texts.subtab_uni;
+                            VerticalLayout {
+                                padding: 20px; spacing: 20px;
+                                Rectangle {
+                                    background: Theme.surface-background;
+                                    border-radius: 8px;
+                                    padding: 1px;
+                                    GroupBox {
+                                        title: Texts.grp_uni_enc;
+                                        VerticalLayout {
+                                            padding: 15px; spacing: 10px;
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_payload; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-payload-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-uni-payload(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-container-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-uni-container(); }
+                                            }
+                                            HorizontalLine { visible: root.uni-use-encryption; }
+                                            HorizontalLayout {
+                                                visible: root.uni-use-encryption;
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_key; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-key-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-uni-key(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-output-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-uni-output(); }
+                                            }
+                                        }
+                                    }
+                                }
+                                CheckBox { text: Texts.chk_security; checked <=> root.uni-use-encryption; }
+                                StyledButton { text: Texts.btn_encode; enabled: root.uni-encode-enabled; clicked => root.request-uni-encode(); }
                             }
                         }
                     }
-                    
-                    CheckBox {
-                        text: "Enable High Security (Three Judges System)";
-                        checked <=> root.use-encryption;
-                    }
-                    
-                    // Key File Input - Only visible if Encryption is enabled
-                    Rectangle {
-                        visible: root.use-encryption;
-                        background: Theme.surface-background;
-                        border-radius: 8px;
-                        padding: 1px;
-                        height: 60px; // Explicit height when visible
-                        GroupBox {
-                             title: "Fourth Judge (Physical Key)";
-                             VerticalLayout {
-                                padding: 5px;
-                                HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Key File:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.key-file-path; read-only: true; placeholder-text: "Optional but recommended"; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-key-file(); }
-                                }
-                             }
-                        }
-                    }
-
-                    StyledButton { text: "Encode"; enabled: root.encode-button-enabled; clicked => root.request-encode(); }
                 }
             }
+
+            // === Tab 2: Decode ===
             Tab {
-                title: "Decode";
-                 VerticalLayout {
-                    spacing: 15px;
-                    padding: 20px;
+                title: Texts.tab_decode;
+                VerticalLayout {
+                    padding: 10px;
+                    TabWidget {
+                        Tab {
+                            title: Texts.subtab_std;
+                            VerticalLayout {
+                                padding: 20px; spacing: 20px;
+                                Rectangle {
+                                    background: Theme.surface-background;
+                                    border-radius: 8px;
+                                    padding: 1px;
+                                    GroupBox {
+                                        title: Texts.grp_std_dec;
+                                        VerticalLayout {
+                                            padding: 15px; spacing: 10px;
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.decode-input-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-decode-input(); }
+                                            }
+                                            HorizontalLine { visible: root.is-encrypted-source; }
+                                            HorizontalLayout {
+                                                visible: root.is-encrypted-source;
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_key_req; vertical-alignment: center; color: Theme.error; min-width: 70px; }
+                                                LineEdit { text: root.decode-key-file-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-decode-key-file(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_voice; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.decode-output-voice-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-decode-output-voice(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_pic; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.decode-output-picture-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-decode-output-picture(); }
+                                            }
+                                        }
+                                    }
+                                }
+                                StyledButton { text: Texts.btn_decode; enabled: root.decode-button-enabled; clicked => root.request-decode(); }
+                            }
+                        }
+                        Tab {
+                            title: Texts.subtab_uni;
+                            VerticalLayout {
+                                padding: 20px; spacing: 20px;
+                                Rectangle {
+                                    background: Theme.surface-background;
+                                    border-radius: 8px;
+                                    padding: 1px;
+                                    GroupBox {
+                                        title: Texts.grp_uni_dec;
+                                        VerticalLayout {
+                                            padding: 15px; spacing: 10px;
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-decode-input-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-uni-decode-input(); }
+                                            }
+                                            HorizontalLine { visible: root.uni-decode-encrypted; }
+                                            HorizontalLayout {
+                                                visible: root.uni-decode-encrypted;
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_key_req; vertical-alignment: center; color: Theme.error; min-width: 70px; }
+                                                LineEdit { text: root.uni-decode-key-path; read-only: true; }
+                                                StyledButton { text: Texts.btn_browse; clicked => root.browse-uni-decode-key(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_preset; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                ComboBox { 
+                                                    model: ["Auto", "PNG", "ZIP", "APK", "EXE"];
+                                                    current-index: root.uni-decode-preset-index;
+                                                    selected => { root.uni-decode-preset-index = self.current-index; }
+                                                    width: 150px;
+                                                }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_payload; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-decode-payload-out; read-only: true; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-uni-decode-payload-out(); }
+                                            }
+                                            HorizontalLine {}
+                                            HorizontalLayout {
+                                                spacing: 10px;
+                                                Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                                                LineEdit { text: root.uni-decode-container-out; read-only: true; placeholder-text: "Optional"; }
+                                                StyledButton { text: Texts.btn_save; clicked => root.browse-uni-decode-container-out(); }
+                                            }
+                                        }
+                                    }
+                                }
+                                StyledButton { text: Texts.btn_decode; enabled: root.uni-decode-enabled; clicked => root.request-uni-decode(); }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // === Tab 3: Settings ===
+            Tab {
+                title: Texts.tab_settings;
+                VerticalLayout {
+                    padding: 20px; spacing: 20px;
+                    alignment: start;
+                    
                     Rectangle {
                         background: Theme.surface-background;
                         border-radius: 8px;
                         padding: 1px;
                         GroupBox {
-                            title: "Restoration";
+                            title: Texts.tab_settings;
                             VerticalLayout {
-                                padding: 15px; spacing: 10px;
+                                padding: 20px; spacing: 20px;
                                 HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Encoded File:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-input-path; read-only: true; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-input(); }
+                                    spacing: 20px;
+                                    Text { text: Texts.stg_lang; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                                    ComboBox { 
+                                        model: ["English", "中文"];
+                                        current-value: Settings.language == "cn" ? "中文" : "English";
+                                        selected => { Settings.language = self.current-value == "中文" ? "cn" : "en"; }
+                                        width: 150px;
+                                    }
                                 }
-                                
-                                // Key File Input - Only visible if Source is Encrypted
-                                HorizontalLine { visible: root.is-encrypted-source; }
-                                HorizontalLayout {
-                                    visible: root.is-encrypted-source;
-                                    spacing: 10px;
-                                    Text { text: "Key File (Req):"; vertical-alignment: center; color: Theme.error; min-width: 90px; }
-                                    LineEdit { text: root.decode-key-file-path; read-only: true; placeholder-text: "Required for decryption"; }
-                                    StyledButton { text: "Browse..."; clicked => root.browse-decode-key-file(); }
-                                }
-                                
                                 HorizontalLine {}
                                 HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Save Voice:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-output-voice-path; read-only: true; }
-                                    StyledButton { text: "Save..."; clicked => root.browse-decode-output-voice(); }
+                                    spacing: 20px;
+                                    Text { text: Texts.stg_theme; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                                    CheckBox { text: Texts.stg_theme_dark; checked <=> Settings.dark-mode; }
                                 }
-                                 HorizontalLine {}
-                                 HorizontalLayout {
-                                    spacing: 10px;
-                                    Text { text: "Save Picture:"; vertical-alignment: center; color: Theme.text-normal; min-width: 90px; }
-                                    LineEdit { text: root.decode-output-picture-path; read-only: true; }
-                                    StyledButton { text: "Save..."; clicked => root.browse-decode-output-picture(); }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 20px;
+                                    Text { text: Texts.stg_manual; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                                    StyledButton { text: Texts.btn_manual; clicked => root.open-manual(); }
+                                }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 20px;
+                                    Text { text: Texts.stg_version; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                                    Text { text: "Beta 2.0"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
                                 }
                             }
                         }
                     }
-                    StyledButton { text: "Decode"; enabled: root.decode-button-enabled; clicked => root.request-decode(); }
                 }
             }
         }
@@ -230,5 +575,111 @@ export component AppWindow inherits Window {
                 Text { text: root.status-text; color: root.status-color; vertical-alignment: center; }
             }
         }
+    }
+    
+    // == Overlays ==
+    
+    // 1. Splash Screen
+    if root.show-splash : Rectangle {
+        background: Theme.window-background;
+        opacity: root.splash-opacity;
+        animate opacity { duration: 1s; easing: ease-out; }
+        
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: Texts.splash_text;
+                color: Theme.primary;
+                font-size: 32px;
+                font-weight: 700;
+                horizontal-alignment: center;
+            }
+        }
+    }
+    
+    // 2. Exit Dialog
+    if root.show-exit-dialog : Rectangle {
+        background: Theme.overlay-background;
+        TouchArea { clicked => { /* block clicks */ } } // Block background clicks
+        
+        Rectangle {
+            width: 400px;
+            height: 200px;
+            background: Theme.surface-background;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: Theme.border;
+            
+            VerticalLayout {
+                padding: 20px;
+                spacing: 20px;
+                Text {
+                    text: Texts.exit_title;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: Theme.text-strong;
+                }
+                Text {
+                    text: Texts.exit_msg;
+                    color: Theme.text-normal;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: end;
+                    StyledButton { text: Texts.btn_cancel; clicked => { root.show-exit-dialog = false; } }
+                    StyledButton { text: Texts.btn_minimize; clicked => { root.show-exit-dialog = false; root.minimize-window(); } }
+                    StyledButton { text: Texts.btn_exit; clicked => { root.close-window(); } }
+                }
+            }
+        }
+    }
+
+    // 3. Processing Overlay
+    if root.is-busy : Rectangle {
+        background: Theme.overlay-background;
+        TouchArea { clicked => { /* block */ } }
+        
+        Rectangle {
+            width: 300px;
+            height: 150px;
+            background: Theme.surface-background;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: Theme.border;
+            
+            VerticalLayout {
+                padding: 30px;
+                spacing: 20px;
+                alignment: center;
+                Text {
+                    text: Texts.processing;
+                    font-size: 16px;
+                    color: Theme.text-strong;
+                    horizontal-alignment: center;
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    ProgressIndicator {
+                        progress: root.progress-value;
+                        height: 8px;
+                        width: 200px;
+                    }
+                    Text {
+                        text: (Math.round(root.progress-value * 100)) + "%";
+                        color: Theme.text-normal;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Manual Overlay
+    if root.show-manual : ManualOverlay {
+        content: root.manual-content;
+        close => { root.show-manual = false; }
+        width: 100%;
+        height: 100%;
     }
 }
