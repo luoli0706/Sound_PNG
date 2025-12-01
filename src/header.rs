@@ -94,4 +94,12 @@ impl Header {
             extension,
         })
     }
+
+    pub fn read_from_stream<R: std::io::Read>(reader: &mut R) -> Result<Self> {
+        let mut bytes = vec![0u8; HEADER_SIZE_BYTES];
+        reader.read_exact(&mut bytes)?;
+        
+        let chunks: Vec<u16> = bytes.chunks(2).map(|c| u16::from_le_bytes([c[0], c[1]])).collect();
+        Self::from_u16_chunks(&chunks)
+    }
 }

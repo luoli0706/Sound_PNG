@@ -4643,6 +4643,7 @@ dependencies = [
  "hound",
  "image 0.24.9",
  "minimp3",
+ "png 0.17.16",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "rfd",

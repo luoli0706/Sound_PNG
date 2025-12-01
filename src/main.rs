@@ -4,11 +4,12 @@ mod decoder;
 mod encoder;
 mod gui;
 mod utils;
-mod converter;
 mod header;
 mod security;
+mod converter;
+mod stream_encoder;
+mod stream_decoder;
 
-fn main() -> anyhow::Result<()> {
-    gui::run()?;
-    Ok(())
+fn main() -> Result<(), slint::PlatformError> {
+    gui::run()
 }

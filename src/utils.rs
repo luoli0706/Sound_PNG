@@ -1,53 +1,65 @@
 use anyhow::{anyhow, Context, Result};
 use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
-use std::fs;
+use std::fs::{self, File};
+use std::io::BufReader;
 use std::path::PathBuf;
 
-/// Reads a WAV file and normalizes its samples to 16-bit integers.
+/// Reads a WAV file and returns an iterator over its normalized 16-bit samples.
 /// Supports 16-bit Int, 24-bit Int, 32-bit Int, and 32-bit Float formats.
-pub fn read_and_normalize_wav(path: &PathBuf) -> Result<(WavSpec, Vec<i16>)> {
-    let mut reader = WavReader::open(path).context("Failed to open WAV file.")?;
-    let spec = reader.spec();
+/// This avoids loading all samples into memory.
+pub struct WavIterator {
+    reader: WavReader<BufReader<File>>,
+    spec: WavSpec,
+}
 
-    let samples = match (spec.sample_format, spec.bits_per_sample) {
-        (SampleFormat::Int, 16) => reader
-            .samples::<i16>()
-            .map(|s| s.context("Failed to read i16 sample"))
-            .collect::<Result<Vec<_>>>()?,
-        (SampleFormat::Int, 24) => reader
-            .samples::<i32>()
-            .map(|s| {
-                s.map(|sample| (sample >> 8) as i16)
-                    .context("Failed to read i24 sample")
-            })
-            .collect::<Result<Vec<_>>>()?,
-        (SampleFormat::Int, 32) => reader
-            .samples::<i32>()
-            .map(|s| {
-                s.map(|sample| (sample >> 16) as i16)
-                    .context("Failed to read i32 sample")
-            })
-            .collect::<Result<Vec<_>>>()?,
-        (SampleFormat::Float, 32) => reader
-            .samples::<f32>()
-            .map(|s| {
-                s.map(|sample| (sample * i16::MAX as f32) as i16)
-                    .context("Failed to read f32 sample")
-            })
-            .collect::<Result<Vec<_>>>()?,
-        _ => {
-            return Err(anyhow!(
-                "Unsupported sample format: {:?} with {}-bit samples",
+impl WavIterator {
+    pub fn new(path: &PathBuf) -> Result<Self> {
+        let reader = WavReader::open(path).context("Failed to open WAV file.")?;
+        let spec = reader.spec();
+        Ok(Self { reader, spec })
+    }
+
+    pub fn spec(&self) -> WavSpec {
+        self.spec
+    }
+    
+    pub fn len(&self) -> u32 {
+        self.reader.len()
+    }
+
+    pub fn into_iter(self) -> Box<dyn Iterator<Item = Result<i16>> + Send> {
+        let spec = self.spec;
+        let reader = self.reader;
+
+        match (spec.sample_format, spec.bits_per_sample) {
+            (SampleFormat::Int, 16) => Box::new(reader.into_samples::<i16>().map(|s| s.context("Read error"))),
+            (SampleFormat::Int, 24) => Box::new(reader.into_samples::<i32>().map(|s| {
+                s.context("Read error").map(|sample| (sample >> 8) as i16)
+            })),
+            (SampleFormat::Int, 32) => Box::new(reader.into_samples::<i32>().map(|s| {
+                s.context("Read error").map(|sample| (sample >> 16) as i16)
+            })),
+            (SampleFormat::Float, 32) => Box::new(reader.into_samples::<f32>().map(|s| {
+                s.context("Read error").map(|sample| (sample * i16::MAX as f32) as i16)
+            })),
+            _ => Box::new(std::iter::once(Err(anyhow!(
+                "Unsupported format: {:?} {} bits",
                 spec.sample_format,
                 spec.bits_per_sample
-            ));
+            )))),
         }
-    };
+    }
+}
 
+// Kept for legacy/non-streaming small files if needed, but implemented via iterator now to reduce duplication logic.
+pub fn read_and_normalize_wav(path: &PathBuf) -> Result<(WavSpec, Vec<i16>)> {
+    let iter = WavIterator::new(path)?;
+    let spec = iter.spec();
+    let samples = iter.into_iter().collect::<Result<Vec<_>>>()?;
     Ok((spec, samples))
 }
 
-// The old function is kept for compatibility, but now uses the new normalization.
+// The old function is kept for compatibility.
 #[allow(dead_code)]
 pub fn read_wav_16bit(path: &PathBuf) -> anyhow::Result<(WavSpec, Vec<i16>)> {
     read_and_normalize_wav(path)

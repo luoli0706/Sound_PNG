@@ -8,6 +8,9 @@ export struct MdBlock {
 export global Settings {
     in-out property <string> language: "cn"; // Default to Chinese
     in-out property <bool> dark-mode: false; // Default to Light
+    in-out property <int> stream-buffer-size: 64; // KB
+    in-out property <bool> update-available: false;
+    in-out property <string> update-version: "";
 }
 
 export global Theme {
@@ -36,6 +39,7 @@ export global Texts {
     
     out property <string> subtab_std: Settings.language == "cn" ? "标准模式" : "Standard Mode";
     out property <string> subtab_uni: Settings.language == "cn" ? "通用模式" : "Universal Mode";
+    out property <string> tab_batch: Settings.language == "cn" ? "批量模式" : "Batch Mode";
     
     out property <string> lbl_voice: Settings.language == "cn" ? "语音:" : "Voice:";
     out property <string> lbl_pic: Settings.language == "cn" ? "图片:" : "Picture:";
@@ -45,11 +49,16 @@ export global Texts {
     out property <string> lbl_save_as: Settings.language == "cn" ? "另存为:" : "Save As:";
     out property <string> lbl_payload: Settings.language == "cn" ? "负载:" : "Payload:";
     out property <string> lbl_container: Settings.language == "cn" ? "容器:" : "Container:";
+    out property <string> lbl_output_dir: Settings.language == "cn" ? "输出目录:" : "Output Dir:";
     
     out property <string> btn_browse: Settings.language == "cn" ? "浏览..." : "Browse...";
+    out property <string> btn_add_files: Settings.language == "cn" ? "添加文件..." : "Add Files...";
+    out property <string> btn_clear: Settings.language == "cn" ? "清空" : "Clear";
     out property <string> btn_save: Settings.language == "cn" ? "保存..." : "Save...";
     out property <string> btn_encode: Settings.language == "cn" ? "执行编码" : "Encode";
     out property <string> btn_decode: Settings.language == "cn" ? "执行解码" : "Decode";
+    out property <string> btn_batch_encode: Settings.language == "cn" ? "开始批量编码" : "Batch Encode";
+    out property <string> btn_batch_decode: Settings.language == "cn" ? "开始批量解码" : "Batch Decode";
     
     out property <string> chk_security: Settings.language == "cn" ? "启用高安全性 (三法官)" : "Enable High Security";
     
@@ -57,12 +66,14 @@ export global Texts {
     out property <string> grp_std_dec: Settings.language == "cn" ? "标准解码" : "Standard Decode";
     out property <string> grp_uni_enc: Settings.language == "cn" ? "通用编码" : "Universal Encode";
     out property <string> grp_uni_dec: Settings.language == "cn" ? "通用解码" : "Universal Decode";
+    out property <string> grp_batch_enc: Settings.language == "cn" ? "批量编码" : "Batch Encode";
+    out property <string> grp_batch_dec: Settings.language == "cn" ? "批量解码" : "Batch Decode";
     
     out property <string> stg_lang: Settings.language == "cn" ? "语言 / Language" : "Language";
     out property <string> stg_theme: Settings.language == "cn" ? "主题 / Theme" : "Theme";
     out property <string> stg_theme_dark: Settings.language == "cn" ? "深色模式" : "Dark Mode";
     
-    out property <string> splash_text: "Sound PNG Beta 2.0";
+    out property <string> splash_text: "Sound PNG Beta 3.0";
     out property <string> exit_title: Settings.language == "cn" ? "确认退出" : "Confirm Exit";
     out property <string> exit_msg: Settings.language == "cn" ? "您确定要退出吗？" : "Are you sure you want to exit?";
     out property <string> btn_exit: Settings.language == "cn" ? "退出程序" : "Exit";
@@ -75,6 +86,7 @@ export global Texts {
     out property <string> stg_version: Settings.language == "cn" ? "版本信息" : "Version Info";
     
     out property <string> lbl_preset: Settings.language == "cn" ? "提取模式:" : "Extract Mode:";
+    out property <string> lbl_resize: Settings.language == "cn" ? "图片缩放:" : "Resize Img:";
     
     out property <string> man_title: Settings.language == "cn" ? "用户手册" : "User Manual";
     out property <string> btn_back: Settings.language == "cn" ? "返回" : "Back";
@@ -192,14 +204,7 @@ export component AppWindow inherits Window {
     height: 600px;
     background: Theme.window-background;
     
-    // ... (Rest of properties)
-    
-    // == Manual Properties ==
-    in-out property <bool> show-manual: false;
-    in property <[MdBlock]> manual-content;
-
-    // ... (Rest of AppWindow)
-
+    // == Standard Mode Properties ==
     in-out property <string> input-voice-path;
     in-out property <string> input-picture-path;
     in-out property <string> key-file-path;
@@ -232,8 +237,23 @@ export component AppWindow inherits Window {
     in-out property <bool> uni-decode-analyzed: false;
     in-out property <bool> uni-decode-encrypted: false;
     
-    // Preset Index: 0=Auto, 1=PNG, 2=ZIP, 3=APK, 4=EXE
+    // Preset Index: 0=Auto, 1=PNG, 2=ZIP, 3=APK, 4=EXE, 5=MP4
     in-out property <int> uni-decode-preset-index: 0;
+    // Resize Index: 0=100%, 1=75%, 2=50%, 3=25%
+    in-out property <int> uni-decode-resize-index: 0;
+
+    // == Batch Mode Properties ==
+    in-out property <[string]> batch-enc-payloads;
+    in-out property <string> batch-enc-container;
+    in-out property <string> batch-enc-out-dir;
+    in-out property <string> batch-enc-key;
+    in-out property <bool> batch-enc-encrypt: false;
+    in property <bool> batch-enc-enabled: false;
+
+    in-out property <[string]> batch-dec-inputs;
+    in-out property <string> batch-dec-out-dir;
+    in-out property <string> batch-dec-key;
+    in property <bool> batch-dec-enabled: false;
 
     in-out property <string> status-text: "Ready.";
     in-out property <color> status-color: Theme.text-normal;
@@ -244,6 +264,10 @@ export component AppWindow inherits Window {
     in-out property <bool> show-exit-dialog: false;
     in-out property <bool> is-busy: false;
     in-out property <float> progress-value: 0.0;
+    
+    // == Manual Properties ==
+    in-out property <bool> show-manual: false;
+    in property <[MdBlock]> manual-content;
 
     // == Callbacks ==
     callback browse-input-voice();
@@ -269,9 +293,24 @@ export component AppWindow inherits Window {
     callback browse-uni-decode-key();
     callback request-uni-decode();
     
+    // Batch Callbacks
+    callback batch-enc-add-payloads();
+    callback batch-enc-clear-payloads();
+    callback batch-enc-browse-container();
+    callback batch-enc-browse-out-dir();
+    callback batch-enc-browse-key();
+    callback request-batch-encode();
+    
+    callback batch-dec-add-inputs();
+    callback batch-dec-clear-inputs();
+    callback batch-dec-browse-out-dir();
+    callback batch-dec-browse-key();
+    callback request-batch-decode();
+    
     callback minimize-window();
     callback close-window();
     callback open-manual();
+    callback open-update-url();
     
     // Handle Close Request
     callback request-close-app(); // Triggered by UI close button or OS
@@ -485,10 +524,24 @@ export component AppWindow inherits Window {
                                                 spacing: 10px;
                                                 Text { text: Texts.lbl_preset; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
                                                 ComboBox { 
-                                                    model: ["Auto", "PNG", "ZIP", "APK", "EXE"];
+                                                    model: ["Auto", "PNG", "ZIP", "APK", "EXE", "MP4"];
                                                     current-index: root.uni-decode-preset-index;
                                                     selected => { root.uni-decode-preset-index = self.current-index; }
                                                     width: 150px;
+                                                }
+                                                Text { 
+                                                    text: Texts.lbl_resize; 
+                                                    vertical-alignment: center; 
+                                                    color: Theme.text-normal; 
+                                                    min-width: 70px; 
+                                                    visible: root.uni-decode-preset-index == 1;
+                                                }
+                                                ComboBox {
+                                                    model: ["Original", "75%", "50%", "25%"];
+                                                    current-index: root.uni-decode-resize-index;
+                                                    selected => { root.uni-decode-resize-index = self.current-index; }
+                                                    width: 100px;
+                                                    visible: root.uni-decode-preset-index == 1;
                                                 }
                                             }
                                             HorizontalLine {}
@@ -515,7 +568,103 @@ export component AppWindow inherits Window {
                 }
             }
 
-            // === Tab 3: Settings ===
+            // === Tab 3: Batch ===
+            Tab {
+                title: Texts.tab_batch;
+                VerticalLayout {
+                    padding: 10px;
+                    TabWidget {
+                        Tab {
+                            title: Texts.grp_batch_enc;
+                            VerticalLayout {
+                                padding: 20px; spacing: 15px;
+                                GroupBox {
+                                    title: "Files";
+                                    VerticalLayout {
+                                        padding: 10px; spacing: 10px;
+                                        HorizontalLayout {
+                                            spacing: 10px;
+                                            StyledButton { text: Texts.btn_add_files; clicked => root.batch-enc-add-payloads(); }
+                                            StyledButton { text: Texts.btn_clear; clicked => root.batch-enc-clear-payloads(); }
+                                            Text { text: root.batch-enc-payloads.length + " files"; vertical-alignment: center; }
+                                        }
+                                        // Placeholder list logic using text for now as ListView is verbose
+                                        Text { 
+                                            text: root.batch-enc-payloads.length > 0 ? "..." : "No files selected"; 
+                                            color: Theme.text-normal; 
+                                        }
+                                    }
+                                }
+                                GroupBox {
+                                    title: "Settings";
+                                    VerticalLayout {
+                                        padding: 10px; spacing: 10px;
+                                        HorizontalLayout {
+                                            Text { text: Texts.lbl_container; vertical-alignment: center; min-width: 80px; }
+                                            LineEdit { text: root.batch-enc-container; read-only: true; }
+                                            StyledButton { text: Texts.btn_browse; clicked => root.batch-enc-browse-container(); }
+                                        }
+                                        HorizontalLayout {
+                                            Text { text: Texts.lbl_output_dir; vertical-alignment: center; min-width: 80px; }
+                                            LineEdit { text: root.batch-enc-out-dir; read-only: true; }
+                                            StyledButton { text: Texts.btn_browse; clicked => root.batch-enc-browse-out-dir(); }
+                                        }
+                                        HorizontalLayout {
+                                            visible: root.batch-enc-encrypt;
+                                            Text { text: Texts.lbl_key; vertical-alignment: center; min-width: 80px; }
+                                            LineEdit { text: root.batch-enc-key; read-only: true; }
+                                            StyledButton { text: Texts.btn_browse; clicked => root.batch-enc-browse-key(); }
+                                        }
+                                        CheckBox { text: Texts.chk_security; checked <=> root.batch-enc-encrypt; }
+                                    }
+                                }
+                                StyledButton { text: Texts.btn_batch_encode; enabled: root.batch-enc-enabled; clicked => root.request-batch-encode(); }
+                            }
+                        }
+                        Tab {
+                            title: Texts.grp_batch_dec;
+                            VerticalLayout {
+                                padding: 20px; spacing: 15px;
+                                GroupBox {
+                                    title: "Files";
+                                    VerticalLayout {
+                                        padding: 10px; spacing: 10px;
+                                        HorizontalLayout {
+                                            spacing: 10px;
+                                            StyledButton { text: Texts.btn_add_files; clicked => root.batch-dec-add-inputs(); }
+                                            StyledButton { text: Texts.btn_clear; clicked => root.batch-dec-clear-inputs(); }
+                                            Text { text: root.batch-dec-inputs.length + " files"; vertical-alignment: center; }
+                                        }
+                                        Text { 
+                                            text: root.batch-dec-inputs.length > 0 ? "..." : "No files selected"; 
+                                            color: Theme.text-normal; 
+                                        }
+                                    }
+                                }
+                                GroupBox {
+                                    title: "Settings";
+                                    VerticalLayout {
+                                        padding: 10px; spacing: 10px;
+                                        HorizontalLayout {
+                                            Text { text: Texts.lbl_output_dir; vertical-alignment: center; min-width: 80px; }
+                                            LineEdit { text: root.batch-dec-out-dir; read-only: true; }
+                                            StyledButton { text: Texts.btn_browse; clicked => root.batch-dec-browse-out-dir(); }
+                                        }
+                                        HorizontalLayout {
+                                            Text { text: Texts.lbl_key; vertical-alignment: center; min-width: 80px; }
+                                            LineEdit { text: root.batch-dec-key; read-only: true; }
+                                            StyledButton { text: Texts.btn_browse; clicked => root.batch-dec-browse-key(); }
+                                        }
+                                    }
+                                }
+                                StyledButton { text: Texts.btn_batch_decode; enabled: root.batch-dec-enabled; clicked => root.request-batch-decode(); }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // === Tab 4: Settings ===
             Tab {
                 title: Texts.tab_settings;
                 VerticalLayout {
@@ -549,6 +698,17 @@ export component AppWindow inherits Window {
                                 HorizontalLine {}
                                 HorizontalLayout {
                                     spacing: 20px;
+                                    Text { text: "Stream Buffer (KB):"; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                                    ComboBox {
+                                        model: ["4", "16", "64", "256", "1024", "4096"];
+                                        current-value: "64";
+                                        selected => { Settings.stream-buffer-size = self.current-value.to-float(); }
+                                        width: 100px;
+                                    }
+                                }
+                                HorizontalLine {}
+                                HorizontalLayout {
+                                    spacing: 20px;
                                     Text { text: Texts.stg_manual; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
                                     StyledButton { text: Texts.btn_manual; clicked => root.open-manual(); }
                                 }
@@ -556,7 +716,17 @@ export component AppWindow inherits Window {
                                 HorizontalLayout {
                                     spacing: 20px;
                                     Text { text: Texts.stg_version; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
-                                    Text { text: "Beta 2.0"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
+                                    Text { text: "Beta 3.0"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
+                                    if Settings.update-available : HorizontalLayout {
+                                        spacing: 10px;
+                                        Rectangle {
+                                            background: Theme.error;
+                                            width: 8px; height: 8px; border-radius: 4px;
+                                            y: parent.height / 2 - 4px;
+                                        }
+                                        Text { text: "New: " + Settings.update-version; color: Theme.primary; vertical-alignment: center; }
+                                        StyledButton { text: "Download"; clicked => { root.open-update-url(); } }
+                                    }
                                 }
                             }
                         }
