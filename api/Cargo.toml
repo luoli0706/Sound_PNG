@@ -1,0 +1,12 @@
+[package]
+name = "sound_png_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+rand_chacha = "0.3"
+rand = "0.8"
+sha2 = "0.10"
+flate2 = "1.0"
+thiserror = "1.0"

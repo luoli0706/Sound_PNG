@@ -5,12 +5,20 @@ export struct MdBlock {
     text: string,
 }
 
+export struct PluginItem {
+    name: string,
+    enabled: bool,
+    description: string,
+}
+
 export global Settings {
     in-out property <string> language: "cn"; // Default to Chinese
     in-out property <bool> dark-mode: false; // Default to Light
     in-out property <int> stream-buffer-size: 64; // KB
     in-out property <bool> update-available: false;
     in-out property <string> update-version: "";
+    in-out property <[PluginItem]> plugins-list;
+    in-out property <bool> sequence-plugin-enabled: false;
 }
 
 export global Theme {
@@ -311,6 +319,10 @@ export component AppWindow inherits Window {
     callback close-window();
     callback open-manual();
     callback open-update-url();
+    callback toggle-plugin(string, bool);
+    
+    in-out property <bool> uni-enc-sequence-mode: false;
+    in-out property <bool> uni-dec-sequence-mode: false;
     
     // Handle Close Request
     callback request-close-app(); // Triggered by UI close button or OS
@@ -429,6 +441,10 @@ export component AppWindow inherits Window {
                                                 Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
                                                 LineEdit { text: root.uni-output-path; read-only: true; }
                                                 StyledButton { text: Texts.btn_save; clicked => root.browse-uni-output(); }
+                                            }
+                                            if Settings.sequence-plugin-enabled : HorizontalLayout {
+                                                spacing: 10px;
+                                                CheckBox { text: "Sequence Mode (Folder)"; checked <=> root.uni-enc-sequence-mode; }
                                             }
                                         }
                                     }
@@ -557,6 +573,10 @@ export component AppWindow inherits Window {
                                                 Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
                                                 LineEdit { text: root.uni-decode-container-out; read-only: true; placeholder-text: "Optional"; }
                                                 StyledButton { text: Texts.btn_save; clicked => root.browse-uni-decode-container-out(); }
+                                            }
+                                            if Settings.sequence-plugin-enabled : HorizontalLayout {
+                                                spacing: 10px;
+                                                CheckBox { text: "Sequence Mode (Folder)"; checked <=> root.uni-dec-sequence-mode; }
                                             }
                                         }
                                     }
@@ -716,7 +736,7 @@ export component AppWindow inherits Window {
                                 HorizontalLayout {
                                     spacing: 20px;
                                     Text { text: Texts.stg_version; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
-                                    Text { text: "Beta 3.0"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
+                                    Text { text: "v1.3.0-beta"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
                                     if Settings.update-available : HorizontalLayout {
                                         spacing: 10px;
                                         Rectangle {
@@ -726,6 +746,23 @@ export component AppWindow inherits Window {
                                         }
                                         Text { text: "New: " + Settings.update-version; color: Theme.primary; vertical-alignment: center; }
                                         StyledButton { text: "Download"; clicked => { root.open-update-url(); } }
+                                    }
+                                }
+                                HorizontalLine {}
+                                GroupBox {
+                                    title: "Plugins";
+                                    VerticalLayout {
+                                        padding: 10px;
+                                        for plugin in Settings.plugins-list : HorizontalLayout {
+                                            spacing: 10px;
+                                            CheckBox {
+                                                text: plugin.name;
+                                                checked: plugin.enabled;
+                                                toggled => { root.toggle-plugin(plugin.name, self.checked); }
+                                            }
+                                            Text { text: plugin.description; vertical-alignment: center; color: Theme.text-normal; overflow: elide; }
+                                        }
+                                        if Settings.plugins-list.length == 0 : Text { text: "No plugins found."; color: Theme.text-normal; }
                                     }
                                 }
                             }

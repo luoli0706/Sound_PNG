@@ -9,6 +9,7 @@ mod security;
 mod converter;
 mod stream_encoder;
 mod stream_decoder;
+mod plugin_loader;
 
 fn main() -> Result<(), slint::PlatformError> {
     gui::run()

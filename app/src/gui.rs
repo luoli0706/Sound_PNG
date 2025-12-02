@@ -4,6 +4,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::{path::PathBuf, thread, fs, process::Command};
 use slint::Model;
 use serde::Deserialize;
+use std::sync::{Arc, Mutex};
+use crate::plugin_loader::PluginManager;
 
 slint::include_modules!();
 
@@ -24,6 +26,7 @@ enum WorkerMessage {
         encrypt: bool,
         buffer_size_kb: usize,
         is_std_mode: bool, 
+        is_sequence_mode: bool, // Added
     },
     DecodeStream {
         input_path: PathBuf,
@@ -32,6 +35,7 @@ enum WorkerMessage {
         buffer_size_kb: usize,
         preset_ext: Option<String>,
         resize_factor: Option<f32>, // 1.0, 0.75, 0.5, 0.25
+        is_sequence_mode: bool, // Added
     },
     Analyze {
         input: PathBuf,
@@ -105,11 +109,10 @@ fn check_for_updates(ui_handle: Weak<AppWindow>) {
 
         if let Ok(resp) = res {
             if let Ok(release) = resp.json::<Release>() {
-                // Current logic: If tag differs from "Beta 3.0" and "v3.0", assume update.
-                // In a real app, use SemVer.
-                let current_tag = "Beta 3.0";
-                // Normalized check
-                if release.tag_name != current_tag && release.tag_name != "v3.0" && release.tag_name != "V3.0" {
+                let current_tag = "v1.3.0-beta";
+                // Simple equality check. If remote tag is different, it's an "update" (or rollback, but we assume newer).
+                // In production, use SemVer.
+                if release.tag_name != current_tag {
                      let _ = slint::invoke_from_event_loop(move || {
                         if let Some(ui) = ui_handle.upgrade() {
                             let settings = ui.global::<Settings>();
@@ -130,9 +133,36 @@ pub fn run() -> Result<(), PlatformError> {
     let (ui_tx, ui_rx) = channel::<UIMessage>();
     let (worker_tx, worker_rx) = channel::<WorkerMessage>();
 
+    // Load Plugins
+    let mut pm = PluginManager::new();
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            let plugin_dir = exe_dir.join("Plugins");
+            if plugin_dir.exists() {
+                pm.load_plugins(&plugin_dir);
+            }
+        }
+    }
+    
+    // Populate UI List
+    let all_meta = pm.get_all_plugins_meta();
+    let mut ui_plugin_list = Vec::new();
+    for (meta, enabled) in all_meta {
+        ui_plugin_list.push(PluginItem {
+            name: meta.name.into(),
+            enabled,
+            description: meta.description.into(),
+        });
+    }
+    let settings = ui.global::<Settings>();
+    settings.set_plugins_list(std::rc::Rc::new(slint::VecModel::from(ui_plugin_list)).into());
+
+    let pm = Arc::new(Mutex::new(pm));
+
     // Worker thread
+    let pm_clone = pm.clone();
     thread::spawn(move || {
-        worker_thread_main(worker_rx, ui_tx);
+        worker_thread_main(worker_rx, ui_tx, pm_clone);
     });
     
     // Check for updates
@@ -174,6 +204,23 @@ pub fn run() -> Result<(), PlatformError> {
     // Update Link
     ui.on_open_update_url(move || {
         let _ = open::that("https://github.com/luoli0706/Sound_PNG/releases");
+    });
+    
+    // Plugin Toggle
+    let pm_toggle = pm.clone();
+    let ui_handle_toggle = ui_handle.clone();
+    ui.on_toggle_plugin(move |name, enabled| {
+        if let Ok(mut pm) = pm_toggle.lock() {
+            pm.set_plugin_enabled(name.as_str(), enabled);
+            // If "Sequence Frame Plugin" is toggled, update global property
+            // Hardcoded for this specific plugin as requested
+            if name.contains("Sequence") {
+                if let Some(ui) = ui_handle_toggle.upgrade() {
+                    let settings = ui.global::<Settings>();
+                    settings.set_sequence_plugin_enabled(enabled);
+                }
+            }
+        }
     });
     
     // Manual
@@ -285,6 +332,7 @@ pub fn run() -> Result<(), PlatformError> {
             encrypt: use_encryption,
             buffer_size_kb: buffer_size,
             is_std_mode: true,
+            is_sequence_mode: false,
         }).unwrap();
     });
 
@@ -351,6 +399,7 @@ pub fn run() -> Result<(), PlatformError> {
             buffer_size_kb: buffer_size,
             preset_ext: None,
             resize_factor: None,
+            is_sequence_mode: false,
         }).unwrap();
     });
 
@@ -368,9 +417,16 @@ pub fn run() -> Result<(), PlatformError> {
     let ui_handle_clone = ui_handle.clone();
     ui.on_browse_uni_container(move || {
         let ui = ui_handle_clone.unwrap();
-        if let Some(path) = FileDialog::new().add_filter("Container", &["png", "wav", "jpg", "jpeg", "mp3"]).pick_file() {
-            ui.set_uni_container_path(path.to_string_lossy().to_string().into());
-            check_uni_encode(&ui);
+        if ui.get_uni_enc_sequence_mode() {
+             if let Some(path) = FileDialog::new().set_title("Select Container Folder (Sequence)").pick_folder() {
+                 ui.set_uni_container_path(path.to_string_lossy().to_string().into());
+                 check_uni_encode(&ui);
+             }
+        } else {
+            if let Some(path) = FileDialog::new().add_filter("Container", &["png", "wav", "jpg", "jpeg", "mp3"]).pick_file() {
+                ui.set_uni_container_path(path.to_string_lossy().to_string().into());
+                check_uni_encode(&ui);
+            }
         }
     });
 
@@ -386,11 +442,18 @@ pub fn run() -> Result<(), PlatformError> {
     ui.on_browse_uni_output(move || {
         let ui = ui_handle_clone.unwrap();
         let container = ui.get_uni_container_path().to_string();
-        let ext = if container.to_lowercase().ends_with("wav") || container.to_lowercase().ends_with("mp3") { "wav" } else { "png" };
         
-        if let Some(path) = FileDialog::new().add_filter(ext, &[ext]).save_file() {
-            ui.set_uni_output_path(path.to_string_lossy().to_string().into());
-            check_uni_encode(&ui);
+        if ui.get_uni_enc_sequence_mode() {
+             if let Some(path) = FileDialog::new().set_title("Select Output Folder (Sequence)").pick_folder() {
+                 ui.set_uni_output_path(path.to_string_lossy().to_string().into());
+                 check_uni_encode(&ui);
+             }
+        } else {
+            let ext = if container.to_lowercase().ends_with("wav") || container.to_lowercase().ends_with("mp3") { "wav" } else { "png" };
+            if let Some(path) = FileDialog::new().add_filter(ext, &[ext]).save_file() {
+                ui.set_uni_output_path(path.to_string_lossy().to_string().into());
+                check_uni_encode(&ui);
+            }
         }
     });
 
@@ -404,6 +467,7 @@ pub fn run() -> Result<(), PlatformError> {
         let key = if key_str.is_empty() { None } else { Some(PathBuf::from(key_str)) };
         let output: PathBuf = ui.get_uni_output_path().to_string().into();
         let encrypt = ui.get_uni_use_encryption();
+        let is_seq = ui.get_uni_enc_sequence_mode();
         
         let settings = ui.global::<Settings>();
         let buffer_size = settings.get_stream_buffer_size() as usize;
@@ -416,6 +480,7 @@ pub fn run() -> Result<(), PlatformError> {
             encrypt,
             buffer_size_kb: buffer_size,
             is_std_mode: false,
+            is_sequence_mode: is_seq,
         }).unwrap();
     });
 
@@ -424,11 +489,19 @@ pub fn run() -> Result<(), PlatformError> {
     let worker_tx_analyze_uni = worker_tx.clone();
     ui.on_browse_uni_decode_input(move || {
         let ui = ui_handle_clone.unwrap();
-        if let Some(path) = FileDialog::new().add_filter("Encoded", &["wav", "png"]).pick_file() {
-            ui.set_uni_decode_input_path(path.to_string_lossy().to_string().into());
-            ui.set_uni_decode_analyzed(false);
-            check_uni_decode(&ui);
-            worker_tx_analyze_uni.send(WorkerMessage::Analyze { input: path, mode: "Universal".into() }).unwrap();
+        if ui.get_uni_dec_sequence_mode() {
+             if let Some(path) = FileDialog::new().set_title("Select Sequence Folder").pick_folder() {
+                ui.set_uni_decode_input_path(path.to_string_lossy().to_string().into());
+                ui.set_uni_decode_analyzed(true); // Skip analysis for seq dir for now
+                check_uni_decode(&ui);
+             }
+        } else {
+            if let Some(path) = FileDialog::new().add_filter("Encoded", &["wav", "png"]).pick_file() {
+                ui.set_uni_decode_input_path(path.to_string_lossy().to_string().into());
+                ui.set_uni_decode_analyzed(false);
+                check_uni_decode(&ui);
+                worker_tx_analyze_uni.send(WorkerMessage::Analyze { input: path, mode: "Universal".into() }).unwrap();
+            }
         }
     });
 
@@ -481,6 +554,7 @@ pub fn run() -> Result<(), PlatformError> {
         let key_str = ui.get_uni_decode_key_path().to_string();
         let key = if key_str.is_empty() { None } else { Some(PathBuf::from(key_str)) };
         let payload_out: PathBuf = ui.get_uni_decode_payload_out().to_string().into();
+        let is_seq = ui.get_uni_dec_sequence_mode();
         
         let preset_idx = ui.get_uni_decode_preset_index();
         let force_ext = match preset_idx {
@@ -510,10 +584,11 @@ pub fn run() -> Result<(), PlatformError> {
             buffer_size_kb: buffer_size,
             preset_ext: force_ext,
             resize_factor,
+            is_sequence_mode: is_seq,
         }).unwrap();
     });
     
-    // Batch Callbacks
+    // Batch Callbacks (Existing logic...)
     let ui_handle_clone = ui_handle.clone();
     ui.on_batch_enc_add_payloads(move || {
         let ui = ui_handle_clone.unwrap();
@@ -686,7 +761,7 @@ pub fn run() -> Result<(), PlatformError> {
     ui.run()
 }
 
-fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessage>) {
+fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessage>, plugins: Arc<Mutex<PluginManager>>) {
     while let Ok(message) = worker_rx.recv() {
         ui_tx.send(UIMessage::Busy(true)).unwrap();
         
@@ -696,12 +771,16 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
         };
 
         match message {
-            WorkerMessage::EncodeStream { payload_path, container_path, key_path, output_path, encrypt, buffer_size_kb, is_std_mode } => {
+            WorkerMessage::EncodeStream { payload_path, container_path, key_path, output_path, encrypt, buffer_size_kb, is_std_mode, is_sequence_mode } => {
                 let mode_str = if is_std_mode { "Std" } else { "Uni" };
                 ui_tx.send(UIMessage::Status(format!("Encoding ({} Stream)...", mode_str).into())).unwrap();
                 
                 let payload_ext = payload_path.extension().and_then(|s| s.to_str()).map(|s| s.to_string());
                 
+                let container_ext = if is_sequence_mode { "seq_dir".to_string() } else {
+                    container_path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase()
+                };
+
                 match fs::File::open(&payload_path) {
                     Ok(mut payload_file) => {
                         match crate::stream_encoder::encode_stream(
@@ -712,6 +791,8 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                             encrypt, 
                             payload_ext.as_deref(),
                             buffer_size_kb,
+                            &plugins,
+                            container_ext, // Pass ext to helper
                             on_progress
                         ) {
                             Ok(_) => ui_tx.send(UIMessage::Status(format!("{} Encoding Complete!", mode_str).into())).unwrap(),
@@ -721,13 +802,19 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                     Err(e) => ui_tx.send(UIMessage::Status(format!("Error opening payload: {}", e).into())).unwrap(),
                 }
             },
-            WorkerMessage::DecodeStream { input_path, output_path, key_path, buffer_size_kb, preset_ext, resize_factor } => {
+            WorkerMessage::DecodeStream { input_path, output_path, key_path, buffer_size_kb, preset_ext, resize_factor, is_sequence_mode } => {
                 ui_tx.send(UIMessage::Status("Decoding (Stream)...".into())).unwrap();
+                let input_ext = if is_sequence_mode { "seq_dir".to_string() } else {
+                    input_path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase()
+                };
+
                 match crate::stream_decoder::decode_stream(
                     &input_path, 
                     &output_path, 
                     key_path.as_ref(), 
                     buffer_size_kb,
+                    &plugins,
+                    input_ext,
                     on_progress
                 ) {
                     Ok(ext) => {
@@ -742,7 +829,6 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                         
                         // Image Resizing
                         if let Some(factor) = resize_factor {
-                            // Only if extension implies image
                             let final_ext_str = final_ext.to_lowercase();
                             if final_ext_str == "png" || final_ext_str == "jpg" || final_ext_str == "jpeg" {
                                 ui_tx.send(UIMessage::Status("Resizing Image...".into())).unwrap();
@@ -770,6 +856,9 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                 let total = payloads.len();
                 let container_ext = container.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
                 
+                // Clone ui_tx for the loop to avoid move errors
+                let ui_tx_loop = ui_tx.clone();
+
                 for (i, payload_path) in payloads.iter().enumerate() {
                     let payload_name = payload_path.file_stem().and_then(|s| s.to_str()).unwrap_or("payload");
                     let output_name = format!("{}_embedded.{}", payload_name, container_ext);
@@ -781,6 +870,8 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                     
                     match fs::File::open(payload_path) {
                         Ok(mut payload_file) => {
+                            // Clone for closure
+                            let tx = ui_tx_loop.clone();
                             if let Err(e) = crate::stream_encoder::encode_stream(
                                 &mut payload_file, 
                                 &container, 
@@ -789,7 +880,9 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                                 encrypt, 
                                 payload_ext.as_deref(),
                                 buffer_size_kb,
-                                |p| { let _ = ui_tx.send(UIMessage::Progress((i as f32 + p) / total as f32)); }
+                                &plugins,
+                                container_ext.clone(),
+                                move |p| { let _ = tx.send(UIMessage::Progress((i as f32 + p) / total as f32)); }
                             ) {
                                 ui_tx.send(UIMessage::Status(format!("Error on {}: {}", payload_name, e).into())).unwrap();
                             }
@@ -802,6 +895,7 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
             WorkerMessage::BatchDecode { inputs, key, out_dir, buffer_size_kb } => {
                 ui_tx.send(UIMessage::Status("Starting Batch Decode...".into())).unwrap();
                 let total = inputs.len();
+                let ui_tx_loop = ui_tx.clone();
                 
                 for (i, input_path) in inputs.iter().enumerate() {
                     let input_name = input_path.file_stem().and_then(|s| s.to_str()).unwrap_or("input");
@@ -809,12 +903,17 @@ fn worker_thread_main(worker_rx: Receiver<WorkerMessage>, ui_tx: Sender<UIMessag
                     
                     ui_tx.send(UIMessage::Status(format!("Decoding {}/{} : {}", i+1, total, input_name).into())).unwrap();
                     
+                    let input_ext = input_path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+                    
+                    let tx = ui_tx_loop.clone();
                     match crate::stream_decoder::decode_stream(
                         input_path, 
                         &output_base, 
                         key.as_ref(), 
                         buffer_size_kb,
-                        |p| { let _ = ui_tx.send(UIMessage::Progress((i as f32 + p) / total as f32)); }
+                        &plugins,
+                        input_ext,
+                        move |p| { let _ = tx.send(UIMessage::Progress((i as f32 + p) / total as f32)); }
                     ) {
                         Ok(ext) => {
                             if !ext.is_empty() {
@@ -860,8 +959,13 @@ fn check_uni_encode(ui: &AppWindow) {
 }
 
 fn check_uni_decode(ui: &AppWindow) {
-    let enabled = !ui.get_uni_decode_input_path().is_empty() && !ui.get_uni_decode_payload_out().is_empty() && ui.get_uni_decode_analyzed();
-    ui.set_uni_decode_enabled(enabled);
+    // For sequence mode, we might not have full analysis yet, assume valid if path selected
+    let ready = if ui.get_uni_dec_sequence_mode() { 
+        !ui.get_uni_decode_input_path().is_empty() && !ui.get_uni_decode_payload_out().is_empty()
+    } else { 
+        !ui.get_uni_decode_input_path().is_empty() && !ui.get_uni_decode_payload_out().is_empty() && ui.get_uni_decode_analyzed() 
+    };
+    ui.set_uni_decode_enabled(ready);
 }
 
 fn check_batch_enc(ui: &AppWindow) {

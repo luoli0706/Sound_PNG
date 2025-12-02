@@ -1,0 +1,12 @@
+[package]
+name = "sequence_frame_plugin"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+sound_png_api = { path = "../../api" }
+anyhow = "1.0"
+png = "0.17"

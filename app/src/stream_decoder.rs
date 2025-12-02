@@ -8,6 +8,8 @@ use std::path::PathBuf;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use rand::RngCore;
+use crate::plugin_loader::PluginManager;
+use std::sync::{Arc, Mutex};
 
 /// Reads extracted payload bytes (encrypted/compressed) from a container stream.
 /// This reader yields the raw byte stream hidden in the container (Header + Payload).
@@ -20,7 +22,8 @@ enum ContainerReader {
     Wav {
         iter: hound::WavIntoSamples<io::BufReader<File>, i32>,
         extracted_buf: std::collections::VecDeque<u8>,
-    }
+    },
+    Plugin(Box<dyn Read + Send>), // Added for plugins
 }
 
 impl ContainerReader {
@@ -29,7 +32,6 @@ impl ContainerReader {
         let reader = decoder.read_info()?;
         let info = reader.info().clone();
         let bpp = info.bytes_per_pixel();
-        // row_buf is internal to png reader usually if we iterate rows.
         
         Ok(Self::Png {
             reader,
@@ -49,46 +51,41 @@ impl ContainerReader {
 
 impl Read for ContainerReader {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let mut total_read = 0;
-        
-        while total_read < buf.len() {
-            // Serve from buffer first
-            match self {
-                Self::Png { extracted_buf, reader, bpp } => {
+        match self {
+            Self::Plugin(r) => r.read(buf),
+            Self::Png { extracted_buf, reader, bpp } => {
+                let mut total_read = 0;
+                while total_read < buf.len() {
                     if let Some(b) = extracted_buf.pop_front() {
                         buf[total_read] = b;
                         total_read += 1;
                         continue;
                     }
-                    
-                    // Refill buffer from next row
                     match reader.next_row() {
                         Ok(Some(row)) => {
                             let data = row.data();
                             let mut i = 0;
                             while i < data.len() {
-                                // R
                                 if i+1 < data.len() { extracted_buf.push_back(data[i+1]); }
-                                // G
                                 if i+3 < data.len() { extracted_buf.push_back(data[i+3]); }
-                                // B
                                 if i+5 < data.len() { extracted_buf.push_back(data[i+5]); }
-                                // A (Skip)
-                                
                                 i += *bpp;
                             }
                         },
-                        Ok(None) => break, // EOF
+                        Ok(None) => break,
                         Err(e) => return Err(io::Error::new(io::ErrorKind::InvalidData, e.to_string())),
                     }
-                },
-                Self::Wav { extracted_buf, iter } => {
+                }
+                Ok(total_read)
+            },
+            Self::Wav { extracted_buf, iter } => {
+                let mut total_read = 0;
+                while total_read < buf.len() {
                     if let Some(b) = extracted_buf.pop_front() {
                         buf[total_read] = b;
                         total_read += 1;
                         continue;
                     }
-                    
                     if let Some(sample_res) = iter.next() {
                         match sample_res {
                             Ok(sample) => {
@@ -100,13 +97,12 @@ impl Read for ContainerReader {
                             Err(e) => return Err(io::Error::new(io::ErrorKind::InvalidData, e.to_string())),
                         }
                     } else {
-                        break; // EOF
+                        break;
                     }
                 }
+                Ok(total_read)
             }
         }
-        
-        Ok(total_read)
     }
 }
 
@@ -129,7 +125,6 @@ impl<R: Read> Read for DecryptReader<R> {
         let n = self.inner.read(buf)?;
         if n == 0 { return Ok(0); }
         
-        // Decrypt (XOR)
         if let Some(rng) = &mut self.rng {
              let mut i = 0;
              while i < n {
@@ -144,18 +139,7 @@ impl<R: Read> Read for DecryptReader<R> {
              if let Some(k_reader) = &mut self.key_stream {
                  let mut k_read = 0;
                  while k_read < n {
-                     // We need to ensure key_buf is large enough? 
-                     // buf.len() might be > key_buf.len() if buffer_size mismatch?
-                     // We'll resize key_buf on fly or just loop logic.
-                     // For safety, we iterate.
-                     
-                     // Actually we initialized key_buf with buffer_size.
-                     // If read request > buffer_size, we might overflow key_buf if we try to read n bytes.
-                     // We should cap read to key_buf.len().
-                     // But `buf` here is the caller's buffer.
-                     
                      let to_read = std::cmp::min(n - k_read, self.key_buf.len());
-                     
                      match k_reader.read(&mut self.key_buf[..to_read]) {
                          Ok(0) => break,
                          Ok(kn) => {
@@ -169,7 +153,6 @@ impl<R: Read> Read for DecryptReader<R> {
                  }
              }
         }
-        
         Ok(n)
     }
 }
@@ -179,22 +162,32 @@ pub fn decode_stream(
     output_path: &PathBuf,
     key_path: Option<&PathBuf>,
     buffer_size_kb: usize,
-    on_progress: impl Fn(f32)
+    plugins: &Arc<Mutex<PluginManager>>,
+    input_ext_hint: String,
+    on_progress: impl Fn(f32) + Send + Sync + 'static
 ) -> Result<String> {
     on_progress(0.0);
     let buffer_size = buffer_size_kb * 1024;
     
-    let ext = input_path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
-    let file_in = File::open(input_path)?;
-    
-    let mut raw_extractor = if ext == "png" {
-        ContainerReader::new_png(file_in)?
-    } else if ext == "wav" {
-        ContainerReader::new_wav(file_in)?
-    } else {
-        return Err(anyhow!("Unsupported container: {}", ext));
+    // Plugin Check
+    let on_progress = Arc::new(on_progress);
+
+    let mut raw_extractor = {
+        let pm = plugins.lock().unwrap();
+        if let Some(decoder) = pm.get_decoder_by_ext(&input_ext_hint) {
+             let cb = on_progress.clone();
+             let reader = decoder.decode(input_path, Box::new(move |p| cb(p)))?;
+             ContainerReader::Plugin(reader)
+        } else if input_ext_hint == "png" {
+             ContainerReader::new_png(File::open(input_path)?)?
+        } else if input_ext_hint == "wav" {
+             ContainerReader::new_wav(File::open(input_path)?)?
+        } else {
+             return Err(anyhow!("Unsupported container: {}", input_ext_hint));
+        }
     };
 
+    // Header parsing...
     let mut header_bytes = vec![0u8; header::HEADER_SIZE_BYTES];
     raw_extractor.read_exact(&mut header_bytes).context("Failed to read header")?;
     
