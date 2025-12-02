@@ -97,6 +97,19 @@ impl PluginManager {
 
     // Helper to find by functionality if we don't know the name, 
     // but for this UI, we will explicitly select the plugin mode.
+    pub fn get_encoder_by_ext(&self, ext: &str) -> Option<&dyn ContainerEncoder> {
+        for plugin in self.plugins.values() {
+            if plugin.enabled {
+                if let Some(enc) = &plugin.encoder {
+                    if enc.supported_extensions().contains(&ext.to_string()) {
+                        return Some(enc.as_ref());
+                    }
+                }
+            }
+        }
+        None
+    }
+
     pub fn get_decoder_by_ext(&self, ext: &str) -> Option<&dyn ContainerDecoder> {
         for plugin in self.plugins.values() {
             if plugin.enabled {

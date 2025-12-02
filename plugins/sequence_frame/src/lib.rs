@@ -32,7 +32,7 @@ impl ContainerEncoder for SequenceFramePlugin {
         container_path: &Path, // This should be a DIRECTORY containing sorted PNGs
         output_path: &Path,    // This should be a DIRECTORY to write output PNGs
         byte_stream: &mut ByteStream<File>,
-        on_progress: Box<dyn Fn(f32) + Send>
+        on_progress: Box<dyn Fn(f32) + Send + Sync>
     ) -> Result<()> {
         // 1. Scan Container Directory
         if !container_path.is_dir() {
@@ -185,7 +185,7 @@ impl ContainerDecoder for SequenceFramePlugin {
     fn decode(
         &self,
         input_path: &Path,
-        on_progress: Box<dyn Fn(f32) + Send>
+        on_progress: Box<dyn Fn(f32) + Send + Sync>
     ) -> Result<Box<dyn Read + Send>> {
         // Input is a directory.
         // We need to chain readers for all PNGs in order.
@@ -214,11 +214,11 @@ struct SequenceReader {
     // We need to read row-by-row to extract LSBs.
     // Since we need `Read`, we'll buffer one image at a time (or row).
     // For simplicity: Load whole image LSBs into buffer when needed.
-    on_progress: Box<dyn Fn(f32) + Send>,
+    on_progress: Box<dyn Fn(f32) + Send + Sync>,
 }
 
 impl SequenceReader {
-    fn new(files: Vec<std::path::PathBuf>, on_progress: Box<dyn Fn(f32) + Send>) -> Self {
+    fn new(files: Vec<std::path::PathBuf>, on_progress: Box<dyn Fn(f32) + Send + Sync>) -> Self {
         Self {
             files,
             current_file_idx: 0,

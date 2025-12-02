@@ -89,7 +89,7 @@ pub fn encode_stream(
 
     let handled = {
         let pm = plugins.lock().unwrap();
-        if let Some(encoder) = pm.get_encoder_by_ext(&container_ext_hint) {
+        if let Some(encoder) = pm.get_encoder(&container_ext_hint) {
              let cb = embed_progress.clone();
              encoder.encode(container_path, output_path, &mut byte_stream, Box::new(move |p| cb(p)))?;
              true

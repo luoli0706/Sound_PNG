@@ -120,7 +120,7 @@ pub trait ContainerEncoder: Send + Sync {
         container_path: &std::path::Path, 
         output_path: &std::path::Path, 
         byte_stream: &mut ByteStream<std::fs::File>,
-        on_progress: Box<dyn Fn(f32) + Send>
+        on_progress: Box<dyn Fn(f32) + Send + Sync>
     ) -> Result<()>;
 }
 
@@ -137,6 +137,6 @@ pub trait ContainerDecoder: Send + Sync {
     fn decode(
         &self,
         input_path: &std::path::Path,
-        on_progress: Box<dyn Fn(f32) + Send>
+        on_progress: Box<dyn Fn(f32) + Send + Sync>
     ) -> Result<Box<dyn Read + Send>>;
 }
