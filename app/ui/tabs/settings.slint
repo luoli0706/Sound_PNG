@@ -1,0 +1,99 @@
+import { Theme, Texts, Settings } from "../theme.slint";
+import { State, Logic } from "../state.slint";
+import { StyledButton, HorizontalLine } from "../components/widgets.slint";
+import { ComboBox, CheckBox, GroupBox, TabWidget, VerticalBox } from "std-widgets.slint";
+
+export component SettingsContent inherits Rectangle {
+    VerticalLayout {
+        padding: 20px; spacing: 20px;
+        alignment: start;
+        
+        Rectangle {
+            background: Theme.surface-background;
+            border-radius: 8px;
+            GroupBox {
+                title: Texts.tab_settings;
+                VerticalLayout {
+                    padding: 20px; spacing: 20px;
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_lang; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        ComboBox { 
+                            model: ["English", "中文"];
+                            current-value: Settings.language == "cn" ? "中文" : "English";
+                            selected => { Settings.language = self.current-value == "中文" ? "cn" : "en"; }
+                            width: 150px;
+                        }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_theme; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        CheckBox { text: Texts.stg_theme_dark; checked <=> Settings.dark-mode; }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_dev; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        CheckBox { text: ""; checked <=> Settings.dev-mode; }
+                    }
+                    if Settings.dev-mode : HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_console; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        CheckBox { text: ""; checked <=> Settings.show-console; }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: "Stream Buffer (KB):"; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        ComboBox {
+                            model: ["4", "16", "64", "256", "1024", "4096"];
+                            current-value: "64";
+                            selected => { Settings.stream-buffer-size = self.current-value.to-float(); }
+                            width: 100px;
+                        }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_manual; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        StyledButton { text: Texts.btn_manual; clicked => { Logic.open-manual(); } }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 20px;
+                        Text { text: Texts.stg_version; vertical-alignment: center; color: Theme.text-normal; font-size: 14px; }
+                        Text { text: "v1.3.1-beta"; vertical-alignment: center; color: Theme.text-strong; font-size: 14px; }
+                        if Settings.update-available : HorizontalLayout {
+                            spacing: 10px;
+                            Rectangle {
+                                background: Theme.error;
+                                width: 8px; height: 8px; border-radius: 4px;
+                                y: parent.height / 2 - 4px;
+                            }
+                            Text { text: "New: " + Settings.update-version; color: Theme.primary; vertical-alignment: center; }
+                            StyledButton { text: "Download"; clicked => { Logic.open-update-url(); } }
+                        }
+                    }
+                    HorizontalLine {}
+                    GroupBox {
+                        title: "Plugins";
+                        VerticalLayout {
+                            padding: 10px;
+                            for plugin in Settings.plugins-list : HorizontalLayout {
+                                spacing: 10px;
+                                CheckBox {
+                                    text: plugin.name;
+                                    checked: plugin.enabled;
+                                    toggled => { Logic.toggle-plugin(plugin.name, self.checked); }
+                                }
+                                Text { text: plugin.description; vertical-alignment: center; color: Theme.text-normal; overflow: elide; }
+                            }
+                            if Settings.plugins-list.length == 0 : Text { text: "No plugins found."; color: Theme.text-normal; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

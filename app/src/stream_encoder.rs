@@ -65,6 +65,28 @@ pub fn encode_stream(
     let header = Header::new(payload_len, effective_encrypt, timestamp, hash, payload_ext.unwrap_or(""));
     let header_bytes = header.to_u16_chunks().iter().flat_map(|u| u.to_le_bytes()).collect::<Vec<u8>>();
     
+    // Step 3.5: Capacity Check
+    let total_required = (header_bytes.len() as u64) + payload_len;
+    let capacity = if container_ext_hint == "png" {
+        get_png_capacity(container_path)?
+    } else if container_ext_hint == "wav" {
+        get_wav_capacity(container_path)?
+    } else if container_ext_hint == "seq_dir" {
+        u64::MAX // Sequence mode handled by plugin, assume infinite or plugin checks
+    } else {
+        // Plugins might handle other types, skip check or ask plugin? 
+        // For now, if plugin handles it, we assume it checks or we skip.
+        // But `encode_stream` falls back to internal if plugin doesn't handle.
+        // Since we don't know if plugin handles it yet (logic below), we might be premature.
+        // However, standard modes (png/wav) are handled internally below.
+        0 // Unknown
+    };
+
+    if capacity > 0 && capacity < total_required {
+         let _ = std::fs::remove_file(temp_compressed);
+         return Err(anyhow!("Container too small! Required: {} bytes, Available: {} bytes.", total_required, capacity));
+    }
+    
     // Step 4: Embed
     compressed_file.seek(std::io::SeekFrom::Start(0))?;
     
@@ -215,4 +237,19 @@ fn embed_wav(
     }
     writer.finalize()?;
     Ok(())
+}
+
+fn get_png_capacity(path: &PathBuf) -> Result<u64> {
+    let file = File::open(path)?;
+    let decoder = png::Decoder::new(file);
+    let reader = decoder.read_info()?;
+    let info = reader.info();
+    // 3 bytes per pixel (R, G, B LSBs)
+    Ok((info.width as u64) * (info.height as u64) * 3)
+}
+
+fn get_wav_capacity(path: &PathBuf) -> Result<u64> {
+    let reader = hound::WavReader::open(path)?;
+    // 2 bytes per sample (we embed 2 bytes per 32-bit sample expansion)
+    Ok(reader.len() as u64 * 2)
 }

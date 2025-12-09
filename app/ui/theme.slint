@@ -1,0 +1,101 @@
+export struct MdBlock {
+    block_type: string,
+    text: string,
+}
+
+export struct PluginItem {
+    name: string,
+    enabled: bool,
+    description: string,
+}
+
+export global Settings {
+    in-out property <string> language: "cn";
+    in-out property <bool> dark-mode: false;
+    in-out property <int> stream-buffer-size: 64;
+    in-out property <bool> update-available: false;
+    in-out property <string> update-version: "";
+    in-out property <[PluginItem]> plugins-list;
+    in-out property <bool> sequence-plugin-enabled: false;
+    in-out property <bool> dev-mode: false;
+    in-out property <bool> show-console: false;
+}
+
+export global Theme {
+    in property <brush> window-background: Settings.dark-mode ? @linear-gradient(135deg, #1f232c 0%, #3a404c 100%) : @linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+    in property <brush> surface-background: Settings.dark-mode ? @linear-gradient(135deg, #3a404c 0%, #1f232c 100%) : @linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
+    in property <brush> overlay-background: Settings.dark-mode ? #000000aa : #ffffffaa;
+    
+    in property <color> primary: #88c0d0;
+    in property <color> primary-dark: #5e81ac;
+    
+    in property <color> text-strong: Settings.dark-mode ? #ffffff : #2e3440;
+    in property <color> text-normal: Settings.dark-mode ? #e5e9f0 : #3b4252;
+    in property <color> code-bg: Settings.dark-mode ? #2c323c : #e5e9f0;
+    
+    in property <color> success: #a3be8c;
+    in property <color> error: #bf616a;
+    
+    in property <color> border: Settings.dark-mode ? #4c566a : #d8dee9;
+}
+
+export global Texts {
+    out property <string> app_title: Settings.language == "cn" ? "Sound PNG - 通用隐写工具" : "Sound PNG - Universal Steganography";
+    out property <string> tab_encode: Settings.language == "cn" ? "编码" : "Encode";
+    out property <string> tab_decode: Settings.language == "cn" ? "解码" : "Decode";
+    out property <string> tab_settings: Settings.language == "cn" ? "设置" : "Settings";
+    
+    out property <string> tab_batch: Settings.language == "cn" ? "批量模式" : "Batch Mode";
+    
+    out property <string> lbl_payload: Settings.language == "cn" ? "负载文件:" : "Payload File:";
+    out property <string> lbl_container: Settings.language == "cn" ? "容器文件:" : "Container File:";
+    out property <string> lbl_save_as: Settings.language == "cn" ? "另存为:" : "Save As:";
+    out property <string> lbl_key: Settings.language == "cn" ? "加密密钥 (可选):" : "Key (Optional):";
+    out property <string> lbl_key_req: Settings.language == "cn" ? "解密密钥 (必须):" : "Key (Required):";
+    
+    out property <string> btn_browse: Settings.language == "cn" ? "浏览..." : "Browse...";
+    out property <string> btn_save: Settings.language == "cn" ? "选择..." : "Select...";
+    out property <string> btn_encode: Settings.language == "cn" ? "执行编码" : "Encode";
+    out property <string> btn_decode: Settings.language == "cn" ? "执行解码" : "Decode";
+    
+    out property <string> chk_security: Settings.language == "cn" ? "启用加密" : "Enable Encryption";
+    out property <string> chk_sequence: Settings.language == "cn" ? "序列帧模式 (文件夹)" : "Sequence Mode (Folder)";
+    
+    out property <string> grp_enc: Settings.language == "cn" ? "编码设置" : "Encode Settings";
+    out property <string> grp_dec: Settings.language == "cn" ? "解码设置" : "Decode Settings";
+    
+    out property <string> err_capacity: Settings.language == "cn" ? "⚠️ 负载过大! 必须小于容器容量." : "⚠️ Payload too large! Must be smaller than container.";
+    
+    out property <string> stg_lang: Settings.language == "cn" ? "语言 / Language" : "Language";
+    out property <string> stg_theme: Settings.language == "cn" ? "主题 / Theme" : "Theme";
+    out property <string> stg_theme_dark: Settings.language == "cn" ? "深色模式" : "Dark Mode";
+    out property <string> stg_dev: Settings.language == "cn" ? "开发者模式" : "Dev Mode";
+    out property <string> stg_console: Settings.language == "cn" ? "显示控制台" : "Show Console";
+    
+    out property <string> splash_text: "Sound PNG v1.3.1-beta";
+    out property <string> exit_title: Settings.language == "cn" ? "确认退出" : "Confirm Exit";
+    out property <string> exit_msg: Settings.language == "cn" ? "您确定要退出吗？" : "Are you sure you want to exit?";
+    out property <string> btn_exit: Settings.language == "cn" ? "退出程序" : "Exit";
+    out property <string> btn_minimize: Settings.language == "cn" ? "最小化" : "Minimize";
+    out property <string> btn_cancel: Settings.language == "cn" ? "取消" : "Cancel";
+    out property <string> processing: Settings.language == "cn" ? "处理中..." : "Processing...";
+    
+    out property <string> stg_manual: Settings.language == "cn" ? "用户手册" : "User Manual";
+    out property <string> btn_manual: Settings.language == "cn" ? "打开说明书" : "Open Manual";
+    out property <string> stg_version: Settings.language == "cn" ? "版本信息" : "Version Info";
+    
+    out property <string> man_title: Settings.language == "cn" ? "用户手册" : "User Manual";
+    out property <string> btn_back: Settings.language == "cn" ? "返回" : "Back";
+    
+    // Batch
+    out property <string> btn_add_files: Settings.language == "cn" ? "添加文件..." : "Add Files...";
+    out property <string> btn_clear: Settings.language == "cn" ? "清空" : "Clear";
+    out property <string> btn_batch_encode: Settings.language == "cn" ? "开始批量编码" : "Batch Encode";
+    out property <string> btn_batch_decode: Settings.language == "cn" ? "开始批量解码" : "Batch Decode";
+    out property <string> grp_batch_enc: Settings.language == "cn" ? "批量编码" : "Batch Encode";
+    out property <string> grp_batch_dec: Settings.language == "cn" ? "批量解码" : "Batch Decode";
+    out property <string> lbl_output_dir: Settings.language == "cn" ? "输出目录:" : "Output Dir:";
+    
+    out property <string> lbl_preset: Settings.language == "cn" ? "提取预设:" : "Extract Preset:";
+    out property <string> lbl_resize: Settings.language == "cn" ? "调整大小:" : "Resize Image:";
+}

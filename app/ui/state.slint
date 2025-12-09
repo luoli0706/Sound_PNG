@@ -1,0 +1,118 @@
+import { MdBlock } from "theme.slint";
+
+export global State {
+    // == Standard Mode Properties ==
+    in-out property <string> input-voice-path;
+    in-out property <string> input-picture-path;
+    in-out property <string> key-file-path;
+    in-out property <string> output-path;
+    in-out property <string> output-format: "WAV"; 
+    in-out property <bool> encode-button-enabled: false;
+    in-out property <bool> use-encryption: false;
+    
+    in-out property <string> decode-input-path;
+    in-out property <string> decode-output-voice-path;
+    in-out property <string> decode-output-picture-path;
+    in-out property <string> decode-key-file-path;
+    in-out property <bool> decode-button-enabled: false;
+    in-out property <bool> is-encrypted-source: false;
+    in-out property <bool> input-analyzed: false;
+
+    // == Universal Mode Properties ==
+    in-out property <string> uni-payload-path;
+    in-out property <string> uni-container-path;
+    in-out property <string> uni-output-path;
+    in-out property <string> uni-key-path;
+    in-out property <bool> uni-encode-enabled: false;
+    in-out property <bool> uni-use-encryption: false;
+    in-out property <bool> uni-enc-sequence-mode: false;
+
+    in-out property <string> uni-decode-input-path;
+    in-out property <string> uni-decode-payload-out;
+    in-out property <string> uni-decode-container-out;
+    in-out property <string> uni-decode-key-path;
+    in-out property <bool> uni-decode-enabled: false;
+    in-out property <bool> uni-decode-analyzed: false;
+    in-out property <bool> uni-decode-encrypted: false;
+    in-out property <bool> uni-dec-sequence-mode: false;
+    
+    // Preset Index: 0=Auto, 1=PNG, 2=ZIP, 3=APK, 4=EXE, 5=MP4
+    in-out property <int> uni-decode-preset-index: 0;
+    // Resize Index: 0=100%, 1=75%, 2=50%, 3=25%
+    in-out property <int> uni-decode-resize-index: 0;
+
+    // == Batch Mode Properties ==
+    in-out property <[string]> batch-enc-payloads;
+    in-out property <string> batch-enc-container;
+    in-out property <string> batch-enc-out-dir;
+    in-out property <string> batch-enc-key;
+    in-out property <bool> batch-enc-encrypt: false;
+    in-out property <bool> batch-enc-enabled: false;
+
+    in-out property <[string]> batch-dec-inputs;
+    in-out property <string> batch-dec-out-dir;
+    in-out property <string> batch-dec-key;
+    in-out property <bool> batch-dec-enabled: false;
+
+    in-out property <string> status-text: "Ready.";
+    in-out property <brush> status-color: #3b4252; // Default, will be overridden by Theme in logic if needed, but here hardcode or bind later?
+    // Actually color depends on Theme, so let's use string for status type? Or just color.
+    // Theme is not available inside Global definition easily unless imported.
+    
+    // == New UX Properties ==
+    in-out property <bool> show-splash: true;
+    in-out property <float> splash-opacity: 1.0;
+    in-out property <bool> show-exit-dialog: false;
+    in-out property <bool> is-busy: false;
+    in-out property <float> progress-value: 0.0;
+    
+    // == Manual Properties ==
+    in-out property <bool> show-manual: false;
+    in-out property <[MdBlock]> manual-content;
+}
+
+export global Logic {
+    callback browse-input-voice();
+    callback browse-input-picture();
+    callback browse-key-file();
+    callback browse-output();
+    callback request-encode();
+    callback browse-decode-input();
+    callback browse-decode-output-voice();
+    callback browse-decode-output-picture();
+    callback browse-decode-key-file();
+    callback request-decode();
+
+    callback browse-uni-payload();
+    callback browse-uni-container();
+    callback browse-uni-output();
+    callback browse-uni-key();
+    callback request-uni-encode();
+    
+    callback browse-uni-decode-input();
+    callback browse-uni-decode-payload-out();
+    callback browse-uni-decode-container-out();
+    callback browse-uni-decode-key();
+    callback request-uni-decode();
+    
+    // Batch Callbacks
+    callback batch-enc-add-payloads();
+    callback batch-enc-clear-payloads();
+    callback batch-enc-browse-container();
+    callback batch-enc-browse-out-dir();
+    callback batch-enc-browse-key();
+    callback request-batch-encode();
+    
+    callback batch-dec-add-inputs();
+    callback batch-dec-clear-inputs();
+    callback batch-dec-browse-out-dir();
+    callback batch-dec-browse-key();
+    callback request-batch-decode();
+    
+    callback minimize-window();
+    callback close-window();
+    callback open-manual();
+    callback open-update-url();
+    callback toggle-plugin(string, bool);
+    callback request-close-app();
+}

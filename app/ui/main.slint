@@ -1,0 +1,184 @@
+import { Theme, Texts, Settings } from "theme.slint";
+import { State, Logic } from "state.slint";
+import { EncodeContent } from "tabs/encode.slint";
+import { DecodeContent } from "tabs/decode.slint";
+import { BatchContent } from "tabs/batch.slint";
+import { SettingsContent } from "tabs/settings.slint";
+import { ManualOverlay, StyledButton } from "components/widgets.slint";
+import { LogTerminal } from "components/console.slint";
+import { TabWidget, ProgressIndicator } from "std-widgets.slint";
+
+export { Theme, Texts, Settings, State, Logic }
+
+export component AppWindow inherits Window {
+    title: Texts.app_title;
+    width: 800px;
+    height: 600px;
+    background: Theme.window-background;
+    
+    in property <[string]> logs; // Bound from Rust
+
+    VerticalLayout {
+        alignment: stretch;
+        spacing: 0;
+
+        // Header
+        Rectangle {
+            height: 40px;
+            background: Theme.surface-background;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                Text {
+                    text: Texts.app_title;
+                    color: Theme.text-strong;
+                    font-size: 18px;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        
+        // Main Content
+        TabWidget {
+            Tab {
+                title: Texts.tab_encode;
+                EncodeContent {}
+            }
+            Tab {
+                title: Texts.tab_decode;
+                DecodeContent {}
+            }
+            Tab {
+                title: Texts.tab_batch;
+                BatchContent {}
+            }
+            Tab {
+                title: Texts.tab_settings;
+                SettingsContent {}
+            }
+        }
+        
+        // Console
+        if Settings.dev-mode && Settings.show-console : LogTerminal {
+            visible-console: true;
+            logs: root.logs;
+        }
+        
+        // Footer
+        Rectangle {
+            height: 40px;
+            background: Theme.surface-background;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                Text { text: State.status-text; color: Theme.text-normal; vertical-alignment: center; }
+            }
+        }
+    }
+    
+    // == Overlays ==
+    
+    // 1. Splash Screen
+    if State.show-splash : Rectangle {
+        background: Theme.window-background;
+        opacity: State.splash-opacity;
+        animate opacity { duration: 1s; easing: ease-out; }
+        
+        VerticalLayout {
+            alignment: center;
+            Text {
+                text: Texts.splash_text;
+                color: Theme.primary;
+                font-size: 32px;
+                font-weight: 700;
+                horizontal-alignment: center;
+            }
+        }
+    }
+    
+    // 2. Exit Dialog
+    if State.show-exit-dialog : Rectangle {
+        background: Theme.overlay-background;
+        TouchArea { clicked => { /* block clicks */ } }
+        
+        Rectangle {
+            width: 400px;
+            height: 200px;
+            background: Theme.surface-background;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: Theme.border;
+            
+            VerticalLayout {
+                padding: 20px;
+                spacing: 20px;
+                Text {
+                    text: Texts.exit_title;
+                    font-size: 18px;
+                    font-weight: 700;
+                    color: Theme.text-strong;
+                }
+                Text {
+                    text: Texts.exit_msg;
+                    color: Theme.text-normal;
+                    wrap: word-wrap;
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: end;
+                    StyledButton { text: Texts.btn_cancel; clicked => { State.show-exit-dialog = false; } }
+                    StyledButton { text: Texts.btn_minimize; clicked => { State.show-exit-dialog = false; Logic.minimize-window(); } }
+                    StyledButton { text: Texts.btn_exit; clicked => { Logic.close-window(); } }
+                }
+            }
+        }
+    }
+
+    // 3. Processing Overlay
+    if State.is-busy : Rectangle {
+        background: Theme.overlay-background;
+        TouchArea { clicked => { /* block */ } }
+        
+        Rectangle {
+            width: 300px;
+            height: 150px;
+            background: Theme.surface-background;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: Theme.border;
+            
+            VerticalLayout {
+                padding: 30px;
+                spacing: 20px;
+                alignment: center;
+                Text {
+                    text: Texts.processing;
+                    font-size: 16px;
+                    color: Theme.text-strong;
+                    horizontal-alignment: center;
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    ProgressIndicator {
+                        progress: State.progress-value;
+                        height: 8px;
+                        width: 200px;
+                    }
+                    Text {
+                        text: (Math.round(State.progress-value * 100)) + "%";
+                        color: Theme.text-normal;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+
+    // 4. Manual Overlay
+    if State.show-manual : ManualOverlay {
+        content: State.manual-content;
+        close => { State.show-manual = false; }
+        width: 100%;
+        height: 100%;
+    }
+}

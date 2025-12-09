@@ -1,0 +1,63 @@
+import { Theme, Texts, Settings } from "../theme.slint";
+import { State, Logic } from "../state.slint";
+import { StyledButton, HorizontalLine } from "../components/widgets.slint";
+import { LineEdit, ComboBox, CheckBox, GroupBox, VerticalBox } from "std-widgets.slint";
+
+export component EncodeContent inherits Rectangle {
+    VerticalLayout {
+        padding: 20px; spacing: 20px;
+        Rectangle {
+            background: Theme.surface-background;
+            border-radius: 8px;
+            GroupBox {
+                title: Texts.grp_enc;
+                VerticalLayout {
+                    padding: 15px; spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Text { text: Texts.lbl_payload; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                        LineEdit { text: State.uni-payload-path; read-only: true; }
+                        StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-payload(); } }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                        LineEdit { text: State.uni-container-path; read-only: true; }
+                        StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-container(); } }
+                    }
+                    HorizontalLine { visible: State.uni-use-encryption; }
+                    HorizontalLayout {
+                        visible: State.uni-use-encryption;
+                        spacing: 10px;
+                        Text { text: Texts.lbl_key; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                        LineEdit { text: State.uni-key-path; read-only: true; }
+                        StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-key(); } }
+                    }
+                    HorizontalLine {}
+                    HorizontalLayout {
+                        spacing: 10px;
+                        Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                        LineEdit { text: State.uni-output-path; read-only: true; }
+                        StyledButton { text: Texts.btn_save; clicked => { Logic.browse-uni-output(); } }
+                    }
+                    
+                    // Warnings / Options
+                    if Settings.sequence-plugin-enabled : HorizontalLayout {
+                        spacing: 10px;
+                        CheckBox { text: Texts.chk_sequence; checked <=> State.uni-enc-sequence-mode; }
+                    }
+                    
+                    // Capacity Warning
+                    if State.uni-encode-enabled == false && State.uni-payload-path != "" && State.uni-container-path != "" : Text {
+                        text: Texts.err_capacity;
+                        color: Theme.error;
+                        wrap: word-wrap;
+                    }
+                }
+            }
+        }
+        CheckBox { text: Texts.chk_security; checked <=> State.uni-use-encryption; }
+        StyledButton { text: Texts.btn_encode; enabled: State.uni-encode-enabled; clicked => { Logic.request-uni-encode(); } }
+    }
+}

@@ -1,0 +1,36 @@
+import { Theme, Texts } from "../theme.slint";
+import { ListView } from "std-widgets.slint";
+
+export component LogTerminal inherits Rectangle {
+    in property <[string]> logs;
+    in property <bool> visible-console;
+    
+    visible: visible-console;
+    height: 150px;
+    background: #1e1e1e;
+    border-width: 1px;
+    border-color: Theme.border;
+    
+    VerticalLayout {
+        padding: 5px;
+        Text {
+            text: "Debug Console";
+            color: #888888;
+            font-size: 10px;
+        }
+        ListView {
+            for log in logs : Text {
+                text: log;
+                color: root.in-r(log, "ERROR") ? #ff5555 : (root.in-r(log, "WARN") ? #ffb86c : (root.in-r(log, "INFO") ? #8be9fd : #aaaaaa));
+                font-family: "Consolas";
+                font-size: 12px;
+                wrap: char-wrap;
+            }
+        }
+    }
+    
+    // Rudimentary string check shim since Slint regex isn't full
+    function in-r(s: string, sub: string) -> bool {
+        return true; // Shim, logic handled in rust usually or better basic check
+    }
+}

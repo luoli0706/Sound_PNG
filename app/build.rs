@@ -8,5 +8,5 @@ fn main() {
             println!("cargo:rustc-link-arg=-Wl,--stack,8388608");
         }
     }
-    slint_build::compile("src/ui.slint").unwrap();
+    slint_build::compile("ui/main.slint").unwrap();
 }

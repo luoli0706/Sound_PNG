@@ -1,0 +1,110 @@
+import { Theme, Texts, MdBlock } from "../theme.slint";
+import { ListView, VerticalBox } from "std-widgets.slint";
+
+export component StyledButton inherits TouchArea {
+    in property <string> text;
+    height: 34px;
+    min-width: 80px;
+    Rectangle {
+        background: root.enabled ? (root.pressed ? Theme.primary-dark : (root.has-hover ? Theme.primary.darker(10%) : Theme.primary)) : Theme.surface-background;
+        border-radius: 4px;
+        border-width: 1px;
+        border-color: Theme.border;
+        Text {
+            text: root.text;
+            color: root.enabled ? Theme.text-strong : Theme.text-normal;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+}
+
+export component HorizontalLine inherits Rectangle {
+    height: 1px;
+    background: Theme.border;
+}
+
+export component ManualOverlay inherits Rectangle {
+    in property <[MdBlock]> content;
+    callback close();
+    
+    background: Theme.window-background;
+    
+    VerticalLayout {
+        padding: 20px;
+        spacing: 10px;
+        
+        // Header
+        HorizontalLayout {
+            Text {
+                text: Texts.man_title;
+                font-size: 24px;
+                font-weight: 700;
+                color: Theme.text-strong;
+                horizontal-alignment: left;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            StyledButton { text: Texts.btn_back; clicked => { root.close(); } }
+        }
+        
+        HorizontalLine {}
+        
+        // Content
+        ListView {
+            for block in root.content : VerticalLayout {
+                padding-bottom: 10px;
+                if block.block_type == "h1" : Text {
+                    text: block.text;
+                    font-size: 22px;
+                    font-weight: 700;
+                    color: Theme.primary;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "h2" : Text {
+                    text: block.text;
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: Theme.text-strong;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "h3" : Text {
+                    text: block.text;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: Theme.text-strong;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "p" : Text {
+                    text: block.text;
+                    font-size: 14px;
+                    color: Theme.text-normal;
+                    wrap: word-wrap;
+                }
+                if block.block_type == "li" : HorizontalLayout {
+                    spacing: 5px;
+                    Text { text: "•"; color: Theme.primary; }
+                    Text {
+                        text: block.text;
+                        font-size: 14px;
+                        color: Theme.text-normal;
+                        wrap: word-wrap;
+                    }
+                }
+                if block.block_type == "code" : Rectangle {
+                    background: Theme.code-bg;
+                    border-radius: 4px;
+                    VerticalLayout {
+                        padding: 10px;
+                        Text {
+                            text: block.text;
+                            font-size: 12px;
+                            font-family: "Consolas"; // Fallback if not available
+                            color: Theme.text-strong;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

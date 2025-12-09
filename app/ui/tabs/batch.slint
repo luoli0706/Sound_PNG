@@ -1,0 +1,97 @@
+import { Theme, Texts, Settings } from "../theme.slint";
+import { State, Logic } from "../state.slint";
+import { StyledButton, HorizontalLine } from "../components/widgets.slint";
+import { LineEdit, CheckBox, GroupBox, TabWidget, VerticalBox } from "std-widgets.slint";
+
+export component BatchContent inherits Rectangle {
+    VerticalLayout {
+        padding: 10px;
+        TabWidget {
+            Tab {
+                title: Texts.grp_batch_enc;
+                VerticalLayout {
+                    padding: 20px; spacing: 15px;
+                    GroupBox {
+                        title: "Files";
+                        VerticalLayout {
+                            padding: 10px; spacing: 10px;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                StyledButton { text: Texts.btn_add_files; clicked => { Logic.batch-enc-add-payloads(); } }
+                                StyledButton { text: Texts.btn_clear; clicked => { Logic.batch-enc-clear-payloads(); } }
+                                Text { text: State.batch-enc-payloads.length + " files"; vertical-alignment: center; }
+                            }
+                            Text { 
+                                text: State.batch-enc-payloads.length > 0 ? "..." : "No files selected"; 
+                                color: Theme.text-normal; 
+                            }
+                        }
+                    }
+                    GroupBox {
+                        title: "Settings";
+                        VerticalLayout {
+                            padding: 10px; spacing: 10px;
+                            HorizontalLayout {
+                                Text { text: Texts.lbl_container; vertical-alignment: center; min-width: 80px; }
+                                LineEdit { text: State.batch-enc-container; read-only: true; }
+                                StyledButton { text: Texts.btn_browse; clicked => { Logic.batch-enc-browse-container(); } }
+                            }
+                            HorizontalLayout {
+                                Text { text: Texts.lbl_output_dir; vertical-alignment: center; min-width: 80px; }
+                                LineEdit { text: State.batch-enc-out-dir; read-only: true; }
+                                StyledButton { text: Texts.btn_browse; clicked => { Logic.batch-enc-browse-out-dir(); } }
+                            }
+                            HorizontalLayout {
+                                visible: State.batch-enc-encrypt;
+                                Text { text: Texts.lbl_key; vertical-alignment: center; min-width: 80px; }
+                                LineEdit { text: State.batch-enc-key; read-only: true; }
+                                StyledButton { text: Texts.btn_browse; clicked => { Logic.batch-enc-browse-key(); } }
+                            }
+                            CheckBox { text: Texts.chk_security; checked <=> State.batch-enc-encrypt; }
+                        }
+                    }
+                    StyledButton { text: Texts.btn_batch_encode; enabled: State.batch-enc-enabled; clicked => { Logic.request-batch-encode(); } }
+                }
+            }
+            Tab {
+                title: Texts.grp_batch_dec;
+                VerticalLayout {
+                    padding: 20px; spacing: 15px;
+                    GroupBox {
+                        title: "Files";
+                        VerticalLayout {
+                            padding: 10px; spacing: 10px;
+                            HorizontalLayout {
+                                spacing: 10px;
+                                StyledButton { text: Texts.btn_add_files; clicked => { Logic.batch-dec-add-inputs(); } }
+                                StyledButton { text: Texts.btn_clear; clicked => { Logic.batch-dec-clear-inputs(); } }
+                                Text { text: State.batch-dec-inputs.length + " files"; vertical-alignment: center; }
+                            }
+                            Text { 
+                                text: State.batch-dec-inputs.length > 0 ? "..." : "No files selected"; 
+                                color: Theme.text-normal; 
+                            }
+                        }
+                    }
+                    GroupBox {
+                        title: "Settings";
+                        VerticalLayout {
+                            padding: 10px; spacing: 10px;
+                            HorizontalLayout {
+                                Text { text: Texts.lbl_output_dir; vertical-alignment: center; min-width: 80px; }
+                                LineEdit { text: State.batch-dec-out-dir; read-only: true; }
+                                StyledButton { text: Texts.btn_browse; clicked => { Logic.batch-dec-browse-out-dir(); } }
+                            }
+                            HorizontalLayout {
+                                Text { text: Texts.lbl_key; vertical-alignment: center; min-width: 80px; }
+                                LineEdit { text: State.batch-dec-key; read-only: true; }
+                                StyledButton { text: Texts.btn_browse; clicked => { Logic.batch-dec-browse-key(); } }
+                            }
+                        }
+                    }
+                    StyledButton { text: Texts.btn_batch_decode; enabled: State.batch-dec-enabled; clicked => { Logic.request-batch-decode(); } }
+                }
+            }
+        }
+    }
+}

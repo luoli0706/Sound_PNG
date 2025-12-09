@@ -1,0 +1,72 @@
+2025-12-07T06:34:26.796204Z  INFO sound_png: Application Started.
+2025-12-07T06:34:26.816216Z  INFO sound_png::gui: Checking for updates...
+2025-12-07T06:34:26.817880Z TRACE reqwest::blocking::client: (ThreadId(5)) start runtime::block_on
+2025-12-07T06:34:26.817861Z TRACE reqwest::blocking::wait: (ThreadId(4)) park without timeout
+2025-12-07T06:34:26.820356Z TRACE reqwest::blocking::wait: wait at most 30s
+2025-12-07T06:34:26.820839Z TRACE reqwest::blocking::wait: (ThreadId(4)) park timeout 29.9999925s
+2025-12-07T06:34:26.821180Z TRACE hyper::client::pool: checkout waiting for idle connection: ("https", api.github.com)
+2025-12-07T06:34:26.821702Z DEBUG reqwest::connect: starting new connection: https://api.github.com/
+2025-12-07T06:34:26.822303Z DEBUG reqwest::connect: proxy(http://127.0.0.1:7890) intercepts 'https://api.github.com/'
+2025-12-07T06:34:26.822952Z TRACE hyper::client::connect::http: Http::connect; scheme=Some("http"), host=Some("127.0.0.1"), port=Some(Port(7890))
+2025-12-07T06:34:26.823515Z DEBUG hyper::client::connect::http: connecting to 127.0.0.1:7890
+2025-12-07T06:34:26.827188Z DEBUG hyper::client::connect::http: connected to 127.0.0.1:7890
+2025-12-07T06:34:26.827565Z TRACE reqwest::connect: tunneling HTTPS over proxy
+2025-12-07T06:34:27.396727Z TRACE hyper::client::conn: client handshake Http1
+2025-12-07T06:34:27.397802Z TRACE hyper::client::client: handshake complete, spawning background dispatcher task
+2025-12-07T06:34:27.398800Z TRACE hyper::proto::h1::conn: flushed({role=client}): State { reading: Init, writing: Init, keep_alive: Busy }
+2025-12-07T06:34:27.399454Z TRACE hyper::client::pool: checkout dropped for ("https", api.github.com)
+2025-12-07T06:34:27.400167Z TRACE encode_headers: hyper::proto::h1::role: Client::encode method=GET, body=None
+2025-12-07T06:34:27.400943Z DEBUG hyper::proto::h1::io: flushed 121 bytes
+2025-12-07T06:34:27.401369Z TRACE hyper::proto::h1::conn: flushed({role=client}): State { reading: Init, writing: KeepAlive, keep_alive: Busy }
+2025-12-07T06:34:27.938818Z TRACE hyper::proto::h1::conn: Conn::read_head
+2025-12-07T06:34:27.939420Z TRACE hyper::proto::h1::io: received 1223 bytes
+2025-12-07T06:34:27.939754Z TRACE parse_headers: hyper::proto::h1::role: Response.parse bytes=1223
+2025-12-07T06:34:27.940284Z TRACE parse_headers: hyper::proto::h1::role: Response.parse Complete(1093)
+2025-12-07T06:34:27.940939Z DEBUG hyper::proto::h1::io: parsed 21 headers
+2025-12-07T06:34:27.941264Z DEBUG hyper::proto::h1::conn: incoming body is content-length (130 bytes)
+2025-12-07T06:34:27.941711Z TRACE hyper::proto::h1::decode: decode; state=Length(130)
+2025-12-07T06:34:27.942012Z DEBUG hyper::proto::h1::conn: incoming body completed
+2025-12-07T06:34:27.942324Z TRACE hyper::proto::h1::conn: maybe_notify; read_from_io blocked
+2025-12-07T06:34:27.942653Z TRACE hyper::proto::h1::conn: flushed({role=client}): State { reading: Init, writing: Init, keep_alive: Idle }
+2025-12-07T06:34:27.943071Z TRACE hyper::proto::h1::conn: flushed({role=client}): State { reading: Init, writing: Init, keep_alive: Idle }
+2025-12-07T06:34:27.943431Z TRACE hyper::client::pool: put; add idle connection for ("https", api.github.com)
+2025-12-07T06:34:27.943796Z DEBUG hyper::client::pool: pooling idle connection for ("https", api.github.com)
+2025-12-07T06:34:27.944241Z TRACE reqwest::blocking::wait: wait at most 30s
+2025-12-07T06:34:27.944656Z TRACE hyper::proto::h1::conn: flushed({role=client}): State { reading: Init, writing: Init, keep_alive: Idle }
+2025-12-07T06:34:27.944737Z TRACE reqwest::blocking::client: closing runtime thread (ThreadId(5))
+2025-12-07T06:34:27.945126Z TRACE hyper::client::pool: idle interval checking for expired
+2025-12-07T06:34:27.945264Z TRACE reqwest::blocking::client: signaled close for runtime thread (ThreadId(5))
+2025-12-07T06:34:27.945574Z TRACE reqwest::blocking::client: (ThreadId(5)) Receiver is shutdown
+2025-12-07T06:34:27.946077Z TRACE reqwest::blocking::client: (ThreadId(5)) end runtime::block_on
+2025-12-07T06:34:27.947664Z TRACE reqwest::blocking::client: (ThreadId(5)) finished
+2025-12-07T06:34:27.948643Z TRACE reqwest::blocking::client: closed runtime thread (ThreadId(5))
+2025-12-07T07:03:34.983009Z  INFO sound_png::gui: Selected Voice: C:\Users\Administrator\Desktop\cur\test\demo_5.wav
+2025-12-07T07:03:41.323898Z  INFO sound_png::gui: Selected Image: C:\Users\Administrator\Desktop\cur\test\test.jpg
+2025-12-07T07:03:58.395508Z  INFO sound_png::gui: Selected Output: C:\Users\Administrator\Desktop\cur\test\2233.wav
+2025-12-07T07:04:00.074361Z  INFO sound_png::gui: Request: Standard Encode
+2025-12-07T07:04:00.082729Z  INFO sound_png::gui: Starting EncodeStream [Std]
+2025-12-07T07:04:00.089813Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Starting Stream Encoding. Container: "C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav", Output: "C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav"
+2025-12-07T07:04:00.092381Z DEBUG encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Creating temp compressed payload at "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\spng_enc_1765091040.tmp"
+2025-12-07T07:04:00.125887Z DEBUG encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Payload Compressed Size: 36558 bytes. Total needed: 36622 bytes.
+2025-12-07T07:04:00.136544Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Checking Container Capacity...
+2025-12-07T07:04:00.141210Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Capacity Check Passed.
+2025-12-07T07:04:28.211506Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\2233.wav" encrypt=false payload_ext=Some("jpg") buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Encoding Complete.
+2025-12-07T07:04:28.213156Z  INFO sound_png::gui: Encode success
+2025-12-07T07:04:41.443246Z  INFO sound_png::gui: Selected Decode Input: C:\Users\Administrator\Desktop\cur\test\2233.wav
+2025-12-07T07:04:41.443950Z  INFO sound_png::gui: Analyzing header for C:\Users\Administrator\Desktop\cur\test\2233.wav
+2025-12-07T07:04:41.447409Z  INFO sound_png::gui: Analysis result: Encrypted=false
+2025-12-07T07:04:41.469968Z  INFO sound_png::gui: Analysis Result: Mode=Standard, Encrypted=false
+2025-12-07T07:05:09.895928Z  INFO sound_png::gui: Selected Uni Decode Input: C:\Users\Administrator\Desktop\cur\test\2233.wav
+2025-12-07T07:05:09.896383Z  INFO sound_png::gui: Analyzing header for C:\Users\Administrator\Desktop\cur\test\2233.wav
+2025-12-07T07:05:09.898222Z  INFO sound_png::gui: Analysis result: Encrypted=false
+2025-12-07T07:05:09.913063Z  INFO sound_png::gui: Analysis Result: Mode=Universal, Encrypted=false
+2025-12-07T07:31:29.493172Z  INFO sound_png: Application Started.
+2025-12-07T07:33:25.622576Z  INFO sound_png: Application Started.
+2025-12-07T07:43:38.054601Z  INFO sound_png: Application Started.
+2025-12-07T07:48:54.130895Z  INFO sound_png::gui: Encoding started...
+2025-12-07T07:48:54.147162Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Starting Stream Encoding. Container: "C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav", Output: "C:\\Users\\Administrator\\Desktop\\cur\\test\\777"
+2025-12-07T07:48:54.154375Z DEBUG encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Creating temp compressed payload at "C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\spng_enc_1765093734.tmp"
+2025-12-07T07:48:54.190331Z DEBUG encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Payload Compressed Size: 36558 bytes. Total needed: 36622 bytes.
+2025-12-07T07:48:54.198504Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Checking Container Capacity...
+2025-12-07T07:48:54.202160Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Capacity Check Passed.
+2025-12-07T07:49:33.228866Z  INFO encode_stream{container_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\demo_5.wav" key_path=None output_path="C:\\Users\\Administrator\\Desktop\\cur\\test\\777" encrypt=false payload_ext=None buffer_size_kb=64 container_ext_hint="wav"}: sound_png::stream_encoder: Encoding Complete.
