@@ -19,6 +19,9 @@ export global Settings {
     in-out property <bool> sequence-plugin-enabled: false;
     in-out property <bool> dev-mode: false;
     in-out property <bool> show-console: false;
+    
+    in-out property <string> python-path: "python";
+    in-out property <string> python-port: "6657";
 }
 
 export global Theme {
@@ -72,7 +75,7 @@ export global Texts {
     out property <string> stg_dev: Settings.language == "cn" ? "开发者模式" : "Dev Mode";
     out property <string> stg_console: Settings.language == "cn" ? "显示控制台" : "Show Console";
     
-    out property <string> splash_text: "Sound PNG v1.3.1-beta";
+    out property <string> splash_text: "Sound PNG v1.3.1";
     out property <string> exit_title: Settings.language == "cn" ? "确认退出" : "Confirm Exit";
     out property <string> exit_msg: Settings.language == "cn" ? "您确定要退出吗？" : "Are you sure you want to exit?";
     out property <string> btn_exit: Settings.language == "cn" ? "退出程序" : "Exit";
@@ -98,4 +101,8 @@ export global Texts {
     
     out property <string> lbl_preset: Settings.language == "cn" ? "提取预设:" : "Extract Preset:";
     out property <string> lbl_resize: Settings.language == "cn" ? "调整大小:" : "Resize Image:";
+    
+    // Py Bridge
+    out property <string> lbl_py_path: Settings.language == "cn" ? "Python 路径:" : "Python Path:";
+    out property <string> lbl_py_port: Settings.language == "cn" ? "网桥端口:" : "Bridge Port:";
 }

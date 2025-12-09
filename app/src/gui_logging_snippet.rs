@@ -1,18 +1,24 @@
-use tracing::{info, instrument};
+use std::sync::{Arc, Mutex};
+use std::sync::mpsc::Sender;
 
-// In gui.rs run function, inject logging into callbacks.
-// For example:
-ui.on_browse_input_voice(move || {
-    info!("User action: Browse Input Voice");
-    let ui = ui_handle_clone.unwrap();
-    if let Some(path) = FileDialog::new().add_filter("Audio", &["wav", "mp3"]).pick_file() {
-        info!("Selected Voice: {:?}", path);
-        ui.set_input_voice_path(path.to_string_lossy().to_string().into());
-        check_std_encode(&ui);
-    } else {
-        info!("Browse cancelled");
+pub struct ChannelWriter {
+    sender: Sender<String>,
+}
+
+impl ChannelWriter {
+    pub fn new(sender: Sender<String>) -> Self {
+        Self { sender }
     }
-});
+}
 
-// Similarly for all other callbacks...
-// I will rewrite gui.rs completely to include all logging calls.
+impl std::io::Write for ChannelWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let msg = String::from_utf8_lossy(buf).to_string();
+        let _ = self.sender.send(msg);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}

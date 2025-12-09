@@ -25,6 +25,7 @@ chrono = "0.4"
 rand = "0.8"
 rand_chacha = "0.3"
 minimp3 = "0.5"
+which = "4.4"
 
 [build-dependencies]
 slint-build = "1.8"

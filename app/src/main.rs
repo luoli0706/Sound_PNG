@@ -3,6 +3,7 @@
 mod decoder;
 mod encoder;
 mod gui;
+mod gui_logging_snippet;
 mod utils;
 mod header;
 mod security;

@@ -1,79 +1,81 @@
 import { Theme, Texts, Settings } from "../theme.slint";
 import { State, Logic } from "../state.slint";
 import { StyledButton, HorizontalLine } from "../components/widgets.slint";
-import { LineEdit, ComboBox, GroupBox, VerticalBox } from "std-widgets.slint";
+import { LineEdit, ComboBox, GroupBox, VerticalBox, ScrollView } from "std-widgets.slint";
 import { CheckBox } from "std-widgets.slint";
 
 export component DecodeContent inherits Rectangle {
-    VerticalLayout {
-        padding: 20px; spacing: 20px;
-        Rectangle {
-            background: Theme.surface-background;
-            border-radius: 8px;
-            GroupBox {
-                title: Texts.grp_dec;
-                VerticalLayout {
-                    padding: 15px; spacing: 10px;
-                    HorizontalLayout {
-                        spacing: 10px;
-                        Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
-                        LineEdit { text: State.uni-decode-input-path; read-only: true; }
-                        StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-decode-input(); } }
-                    }
-                    HorizontalLine { visible: State.uni-decode-encrypted; }
-                    HorizontalLayout {
-                        visible: State.uni-decode-encrypted;
-                        spacing: 10px;
-                        Text { text: Texts.lbl_key_req; vertical-alignment: center; color: Theme.error; min-width: 70px; }
-                        LineEdit { text: State.uni-decode-key-path; read-only: true; }
-                        StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-decode-key(); } }
-                    }
-                    HorizontalLine {}
-                    HorizontalLayout {
-                        spacing: 10px;
-                        Text { text: Texts.lbl_preset; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
-                        ComboBox { 
-                            model: ["Auto", "PNG", "ZIP", "APK", "EXE", "MP4"];
-                            current-index: State.uni-decode-preset-index;
-                            selected => { State.uni-decode-preset-index = self.current-index; }
-                            width: 150px;
+    ScrollView {
+        VerticalLayout {
+            padding: 20px; spacing: 20px;
+            Rectangle {
+                background: Theme.surface-background;
+                border-radius: 8px;
+                GroupBox {
+                    title: Texts.grp_dec;
+                    VerticalLayout {
+                        padding: 15px; spacing: 10px;
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                            LineEdit { text: State.uni-decode-input-path; read-only: true; }
+                            StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-decode-input(); } }
                         }
-                        Text { 
-                            text: Texts.lbl_resize; 
-                            vertical-alignment: center; 
-                            color: Theme.text-normal; 
-                            min-width: 70px; 
-                            visible: State.uni-decode-preset-index == 1;
+                        HorizontalLine { visible: State.uni-decode-encrypted; }
+                        HorizontalLayout {
+                            visible: State.uni-decode-encrypted;
+                            spacing: 10px;
+                            Text { text: Texts.lbl_key_req; vertical-alignment: center; color: Theme.error; min-width: 70px; }
+                            LineEdit { text: State.uni-decode-key-path; read-only: true; }
+                            StyledButton { text: Texts.btn_browse; clicked => { Logic.browse-uni-decode-key(); } }
                         }
-                        ComboBox {
-                            model: ["Original", "75%", "50%", "25%"];
-                            current-index: State.uni-decode-resize-index;
-                            selected => { State.uni-decode-resize-index = self.current-index; }
-                            width: 100px;
-                            visible: State.uni-decode-preset-index == 1;
+                        HorizontalLine {}
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Text { text: Texts.lbl_preset; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                            ComboBox { 
+                                model: ["Auto", "PNG", "ZIP", "APK", "EXE", "MP4"];
+                                current-index: State.uni-decode-preset-index;
+                                selected => { State.uni-decode-preset-index = self.current-index; }
+                                width: 150px;
+                            }
+                            Text { 
+                                text: Texts.lbl_resize; 
+                                vertical-alignment: center; 
+                                color: Theme.text-normal; 
+                                min-width: 70px; 
+                                visible: State.uni-decode-preset-index == 1;
+                            }
+                            ComboBox {
+                                model: ["Original", "75%", "50%", "25%"];
+                                current-index: State.uni-decode-resize-index;
+                                selected => { State.uni-decode-resize-index = self.current-index; }
+                                width: 100px;
+                                visible: State.uni-decode-preset-index == 1;
+                            }
                         }
-                    }
-                    HorizontalLine {}
-                    HorizontalLayout {
-                        spacing: 10px;
-                        Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
-                        LineEdit { text: State.uni-decode-payload-out; read-only: true; }
-                        StyledButton { text: Texts.btn_save; clicked => { Logic.browse-uni-decode-payload-out(); } }
-                    }
-                    HorizontalLine {}
-                    HorizontalLayout {
-                        spacing: 10px;
-                        Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
-                        LineEdit { text: State.uni-decode-container-out; read-only: true; placeholder-text: "Optional"; }
-                        StyledButton { text: Texts.btn_save; clicked => { Logic.browse-uni-decode-container-out(); } }
-                    }
-                    if Settings.sequence-plugin-enabled : HorizontalLayout {
-                        spacing: 10px;
-                        CheckBox { text: Texts.chk_sequence; checked <=> State.uni-dec-sequence-mode; }
+                        HorizontalLine {}
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Text { text: Texts.lbl_save_as; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                            LineEdit { text: State.uni-decode-payload-out; read-only: true; }
+                            StyledButton { text: Texts.btn_save; clicked => { Logic.browse-uni-decode-payload-out(); } }
+                        }
+                        HorizontalLine {}
+                        HorizontalLayout {
+                            spacing: 10px;
+                            Text { text: Texts.lbl_container; vertical-alignment: center; color: Theme.text-normal; min-width: 70px; }
+                            LineEdit { text: State.uni-decode-container-out; read-only: true; placeholder-text: "Optional"; }
+                            StyledButton { text: Texts.btn_save; clicked => { Logic.browse-uni-decode-container-out(); } }
+                        }
+                        if Settings.sequence-plugin-enabled : HorizontalLayout {
+                            spacing: 10px;
+                            CheckBox { text: Texts.chk_sequence; checked <=> State.uni-dec-sequence-mode; }
+                        }
                     }
                 }
             }
+            StyledButton { text: Texts.btn_decode; enabled: State.uni-decode-enabled; clicked => { Logic.request-uni-decode(); } }
         }
-        StyledButton { text: Texts.btn_decode; enabled: State.uni-decode-enabled; clicked => { Logic.request-uni-decode(); } }
     }
 }

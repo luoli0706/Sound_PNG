@@ -3,5 +3,6 @@ members = [
     "app",
     "api",
     "plugins/sequence_frame",
+    "plugins/sn_py_bridge",
 ]
 resolver = "2"
